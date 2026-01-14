@@ -44,4 +44,4 @@ GroupMeetingInvite.belongsTo(User, { foreignKey: "userId" });
 GroupMeeting.hasMany(GroupMeetingInvite, { foreignKey: "meetingId" });
 GroupMeetingInvite.belongsTo(GroupMeeting, { foreignKey: "meetingId" });
 
-export { GroupMeeting, GroupMeetingInvite };
+export default  GroupMeetingInvite

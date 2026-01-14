@@ -1,4 +1,4 @@
-import { sequelize } from "./db.js";
+import { sequelize } from "../database/db.js";
 
 async function test() {
   const MAX_RETRIES = 5;

@@ -2,8 +2,8 @@ import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../database/db.js";
 import User from "./user.model.js";
 import Group from "./group.model.js";
-import GroupMeeting from "./groupMeeting.model.js";
-import GroupInvite from "./groupInvite.model.js";
+import GroupMeeting from "./group-meeting.model.js";
+import GroupInvite from "./group-invite.model.js";
 import Position from "./position.model.js";
 import Election from "./election.model.js";
 

@@ -22,7 +22,7 @@ Position.init(
         key: "id",
       },
     },
-    createdBy: {
+    created_by: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
@@ -43,7 +43,7 @@ Position.init(
 Position.belongsTo(Election, { foreignKey: "electionId" });
 Election.hasMany(Position, { foreignKey: "electionId" });
 
-Position.belongsTo(User, { foreignKey: "createdBy" });
-User.hasMany(Position, { foreignKey: "createdBy" });
+Position.belongsTo(User, { foreignKey: "created_by" });
+User.hasMany(Position, { foreignKey: "created_by" });
 
 export default Position;

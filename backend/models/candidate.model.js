@@ -64,4 +64,3 @@ User.hasMany(Candidate, { foreignKey: "nominated_by", as: "Nominations" });
 Candidate.belongsTo(User, { foreignKey: "nominated_by", as: "Nominator" });
 
 export default Candidate;
-s
