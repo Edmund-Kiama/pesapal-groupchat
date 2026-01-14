@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/env.js";
-import User from "../models/user.model.js";
+import User from "../models/index.js";
 
 export const authenticate = async (req, res, next) => {
   try {
@@ -22,7 +22,7 @@ export const authenticate = async (req, res, next) => {
 
     //verify token and find its userId
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.userId);
+    const user = await User.findByPk(decoded.userId);
 
     if (!user) {
       return res.status(401).json({
@@ -38,7 +38,7 @@ export const authenticate = async (req, res, next) => {
     next();
   } catch (error) {
     res.status(401).json({
-      message: "Unauthrozied",
+      message: "Unauthorized",
       error: error.message,
     });
   }
