@@ -1,6 +1,6 @@
-import {config} from "dotenv"
+import { config } from "dotenv";
 
-config({path : `.env.${process.env.NODE_ENV || "development"}.local`})
+config({ path: `.env.${process.env.NODE_ENV || "development"}.local` });
 
 export const {
   PORT,
@@ -15,4 +15,6 @@ export const {
   EMAIL_FROM,
   EMAIL_FROM_NAME,
   FRONTEND_URL,
+
+  DATABASE_URL,
 } = process.env;

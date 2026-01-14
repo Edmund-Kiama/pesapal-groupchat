@@ -3,8 +3,6 @@ import errorMiddleware from "./middleware/error.middleware.js";
 import { authenticate } from "./middleware/auth.middleware.js";
 import authRouter from "./router/auth.route.js";
 import groupRouter from "./router/group.route.js";
-import connectToDatabase from "./database/mongodb.js";
-import { PORT } from "./config/env.js";
 import cookieParser from "cookie-parser";
 import userRouter from "./router/user.route.js";
 import electionRouter from "./router/election.route.js";
@@ -15,6 +13,7 @@ import voteRouter from "./router/vote.route.js";
 import groupInviteRouter from "./router/group-invite.route.js";
 import groupMeetingRouter from "./router/group-meeting.route.js";
 import notificationRouter from "./router/notification.route.js";
+import { connectDB } from "./database/connect-db.js";
 
 const app = express();
 
@@ -44,10 +43,20 @@ app.use("/api/v1/vote", authenticate, voteRouter);
 app.use(errorMiddleware);
 
 //listener
-app.listen(PORT, async () => {
-  console.log(`Group Lending is running on http://localhost:${PORT}`);
-  await connectToDatabase();
-});
+async function startServer() {
+  try {
+    await connectDB();
+
+    app.listen(3000, () => {
+      console.log("🚀 Server running on port 3000");
+    });
+  } catch (error) {
+    console.error("🚫 Server startup aborted (DB failed)");
+    process.exit(1);
+  }
+}
+
+startServer();
 
 export default app;
  
