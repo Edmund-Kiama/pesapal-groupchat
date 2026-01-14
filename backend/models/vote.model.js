@@ -1,26 +1,54 @@
-import mongoose from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../database/db.js";
+import Election from "./election.model.js";
+import Candidate from "./candidate.model.js";
+import Position from "./position.model.js";
 
-const voteSchema = new mongoose.Schema(
+class Vote extends Model {}
+
+Vote.init(
   {
     electionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Election",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Election,
+        key: "id",
+      },
     },
     candidateId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Candidate",
-        required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Candidate,
+        key: "id",
       },
+    },
     positionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Position",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Position,
+        key: "id",
+      },
     },
   },
-  { timestamps: true }
+  {
+    sequelize,
+    modelName: "Vote",
+    tableName: "votes",
+    timestamps: true,
+  }
 );
 
-const Vote = mongoose.model("Vote", voteSchema);
+// Associations
+Vote.belongsTo(Election, { foreignKey: "electionId" });
+Election.hasMany(Vote, { foreignKey: "electionId" });
+
+Vote.belongsTo(Candidate, { foreignKey: "candidateId" });
+Candidate.hasMany(Vote, { foreignKey: "candidateId" });
+
+Vote.belongsTo(Position, { foreignKey: "positionId" });
+Position.hasMany(Vote, { foreignKey: "positionId" });
 
 export default Vote;

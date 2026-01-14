@@ -2,16 +2,18 @@ import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../database/db.js";
 import User from "./user.model.js";
 import Election from "./election.model.js";
+import Position from "./position.model.js";
 
-class Position extends Model {}
+class VotingRight extends Model {}
 
-Position.init(
+VotingRight.init(
   {
-    position: {
-      type: DataTypes.STRING(30),
+    userId: {
+      type: DataTypes.INTEGER,
       allowNull: false,
-      validate: {
-        len: [2, 30],
+      references: {
+        model: User,
+        key: "id",
       },
     },
     electionId: {
@@ -22,28 +24,30 @@ Position.init(
         key: "id",
       },
     },
-    createdBy: {
+    positionId: {
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: User,
+        model: Position,
         key: "id",
       },
+    },
+    has_voted: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
   },
   {
     sequelize,
-    modelName: "Position",
-    tableName: "positions",
+    modelName: "VotingRight",
+    tableName: "voting_rights",
     timestamps: true,
   }
 );
 
 // Associations
-Position.belongsTo(Election, { foreignKey: "electionId" });
-Election.hasMany(Position, { foreignKey: "electionId" });
+User.hasMany(VotingRight, { foreignKey: "userId" });
+VotingRight.belongsTo(User, { foreignKey: "userId" });
 
-Position.belongsTo(User, { foreignKey: "createdBy" });
-User.hasMany(Position, { foreignKey: "createdBy" });
-
-export default Position;
+export default VotingRight;

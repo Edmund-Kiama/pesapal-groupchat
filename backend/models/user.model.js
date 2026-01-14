@@ -1,66 +1,73 @@
 import mongoose from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../database/db.js";
 
-const userSchema = new mongoose.Schema(
+class User extends Model {}
+
+User.init(
   {
+    // Name
     name: {
-      type: String,
-      required: [true, "User name is required"],
-      trim: true,
-      minLength: 2,
-      maxLength: 30,
-    },
-    email: {
-      type: String,
-      required: [true, "Email is required"],
-      trim: true,
-      unique: true,
-      lowercase: true,
-      match: [/\S+@\S+\.\S+/, "Please fill a valid email address"],
-    },
-    password: {
-      type: String,
-      required: [true, "Password is required"],
-      minLength: 6,
-    },
-    role: {
-      type: String,
-      enum: {
-        values: ["admin", "member"],
-        message: "{VALUE} is not a valid role",
+      type: DataTypes.STRING(30), // max 30 chars
+      allowNull: false,
+      validate: {
+        notNull: { msg: "User name is required" },
+        len: { args: [2, 30], msg: "Name must be 2-30 characters" },
       },
-      default: "member",
-      lowercase: true,
-      trim: true,
     },
-    voting_rights: [
-      {
-        electionId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Election",
-          required: true,
+
+    // Email
+    email: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
+      validate: {
+        notNull: { msg: "Email is required" },
+        isEmail: { msg: "Must be a valid email address" },
+      },
+    },
+
+    // Password
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notNull: { msg: "Password is required" },
+        len: { args: [6], msg: "Password must be at least 6 characters" },
+      },
+    },
+
+    // Role
+    role: {
+      type: DataTypes.ENUM("admin", "member"),
+      defaultValue: "member",
+      allowNull: false,
+      validate: {
+        isIn: {
+          args: [["admin", "member"]],
+          msg: "Role must be admin or member",
         },
-        positionId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "Position",
-          required: true,
-        },
-        has_voted: {
-          type: Boolean,
-          required: true,
-          default: false
-        }
-      }
-    ],
+      },
+    },
+
+    // Reset Password Token
     resetPasswordToken: {
-      type: String,
+      type: DataTypes.STRING,
+      allowNull: true,
     },
+
+    // Reset Password Expiry
     resetPasswordExpires: {
-      type: Date,
+      type: DataTypes.DATE,
+      allowNull: true,
     },
   },
-  { timestamps: true }
+  {
+    sequelize,
+    modelName: "User",
+    tableName: "users",
+    timestamps: true,
+  }
 );
-
-const User = mongoose.model("User", userSchema);
 
 export default User;

@@ -1,17 +1,26 @@
-import mongoose from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../database/db.js";
+import User from "./user.model.js";
+import Group from "./group.model.js";
+import GroupMeeting from "./groupMeeting.model.js";
+import GroupInvite from "./groupInvite.model.js";
+import Position from "./position.model.js";
+import Election from "./election.model.js";
 
-const notificationSchema = new mongoose.Schema(
+class Notification extends Model {}
+
+Notification.init(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-      index: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
-
     type: {
-      type: String,
-      enum: [
+      type: DataTypes.ENUM(
         "GROUP_CREATED",
         "GROUP_MEMBER_ADDED",
         "GROUP_INVITE_CREATED",
@@ -27,32 +36,85 @@ const notificationSchema = new mongoose.Schema(
         "ELECTION_DELETED",
         "CANDIDATE_NOMINATED",
         "USER_CREATION",
-        "ADMIN_CREATION",
-      ],
-      required: true,
+        "ADMIN_CREATION"
+      ),
+      allowNull: false,
     },
-
     message: {
-      type: String,
-      required: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
-
-    // reference to related entity (optional)
-    metadata: {
-      groupId: { type: mongoose.Schema.Types.ObjectId, ref: "Group" },
-      meetingId: { type: mongoose.Schema.Types.ObjectId, ref: "GroupMeeting" },
-      inviteId: { type: mongoose.Schema.Types.ObjectId, ref: "GroupInvite" },
-      positionId: { type: mongoose.Schema.Types.ObjectId, ref: "Position" },
-      electionId: { type: mongoose.Schema.Types.ObjectId, ref: "Election" },
+    groupId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: Group,
+        key: "id",
+      },
     },
-
+    meetingId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: GroupMeeting,
+        key: "id",
+      },
+    },
+    inviteId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: GroupInvite,
+        key: "id",
+      },
+    },
+    positionId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: Position,
+        key: "id",
+      },
+    },
+    electionId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: Election,
+        key: "id",
+      },
+    },
     isRead: {
-      type: Boolean,
-      default: false,
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
   },
-  { timestamps: true }
+  {
+    sequelize,
+    modelName: "Notification",
+    tableName: "notifications",
+    timestamps: true,
+  }
 );
 
-const Notification = mongoose.model("Notification", notificationSchema);
+// Associations
+User.hasMany(Notification, { foreignKey: "userId" });
+Notification.belongsTo(User, { foreignKey: "userId" });
+
+Group.hasMany(Notification, { foreignKey: "groupId" });
+Notification.belongsTo(Group, { foreignKey: "groupId" });
+
+GroupMeeting.hasMany(Notification, { foreignKey: "meetingId" });
+Notification.belongsTo(GroupMeeting, { foreignKey: "meetingId" });
+
+GroupInvite.hasMany(Notification, { foreignKey: "inviteId" });
+Notification.belongsTo(GroupInvite, { foreignKey: "inviteId" });
+
+Position.hasMany(Notification, { foreignKey: "positionId" });
+Notification.belongsTo(Position, { foreignKey: "positionId" });
+
+Election.hasMany(Notification, { foreignKey: "electionId" });
+Notification.belongsTo(Election, { foreignKey: "electionId" });
+
 export default Notification;

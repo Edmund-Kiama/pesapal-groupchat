@@ -1,26 +1,47 @@
-import mongoose from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../database/db.js";
+import User from "./user.model.js";
+import Group from "./group.model.js";
 
-const groupMemberSchema = new mongoose.Schema(
+class GroupMember extends Model {}
+
+GroupMember.init(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
     groupId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Group",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Group,
+        key: "id",
+      },
     },
     joined_at: {
-      type: Date,
-      default: Date.now,
-      required: true,
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
     },
   },
-  { timestamps: true }
+  {
+    sequelize,
+    modelName: "GroupMember",
+    tableName: "group_members",
+    timestamps: true,
+  }
 );
 
-const GroupMember = mongoose.model("GroupMember", groupMemberSchema);
+// Associations
+User.hasMany(GroupMember, { foreignKey: "userId" });
+GroupMember.belongsTo(User, { foreignKey: "userId" });
+
+Group.hasMany(GroupMember, { foreignKey: "groupId" });
+GroupMember.belongsTo(Group, { foreignKey: "groupId" });
 
 export default GroupMember;

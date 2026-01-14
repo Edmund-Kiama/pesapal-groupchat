@@ -1,28 +1,50 @@
-import mongoose from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../database/db.js";
+import User from "./user.model.js";
+import Group from "./group.model.js";
 
-const groupChatSchema = new mongoose.Schema(
+class GroupChat extends Model {}
+
+GroupChat.init(
   {
     content: {
-      type: String,
-      required: [true, "Content is required"],
-      trim: true,
-      minLength: 1,
-      maxLength: 999,
+      type: DataTypes.STRING(999),
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+        len: [1, 999],
+      },
     },
     senderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
     groupId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Group",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Group,
+        key: "id",
+      },
     },
   },
-  { timestamps: true }
+  {
+    sequelize,
+    modelName: "GroupChat",
+    tableName: "group_chats",
+    timestamps: true,
+  }
 );
 
-const GroupChat = mongoose.model("GroupChat", groupChatSchema);
+// Associations
+User.hasMany(GroupChat, { foreignKey: "senderId", as: "SentMessages" });
+GroupChat.belongsTo(User, { foreignKey: "senderId", as: "Sender" });
+
+Group.hasMany(GroupChat, { foreignKey: "groupId" });
+GroupChat.belongsTo(Group, { foreignKey: "groupId" });
 
 export default GroupChat;

@@ -1,50 +1,53 @@
-import mongoose from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../database/db.js";
+import User from "./user.model.js";
+import Group from "./group.model.js";
 
-const groupMeetingSchema = new mongoose.Schema(
+class GroupMeeting extends Model {}
+
+GroupMeeting.init(
   {
     location: {
-      type: String,
-      required: [true, "Location is required"],
-      trim: true,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     created_by: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    invited: [
-      {
-        userId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-          required: true,
-        },
-        status: {
-          type: String,
-          enum: ["pending", "accepted", "declined"],
-          default: "pending",
-        },
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
       },
-    ],
+    },
     groupId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Group",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Group,
+        key: "id",
+      },
     },
-    time: {
-      to: {
-        type: Date,
-        required: [true, "Time to is required"],
-      },
-      from: {
-        type: Date,
-        required: [true, "Time from is required"],
-      },
+    time_from: {
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    time_to: {
+      type: DataTypes.DATE,
+      allowNull: false,
     },
   },
-  { timestamps: true }
+  {
+    sequelize,
+    modelName: "GroupMeeting",
+    tableName: "group_meetings",
+    timestamps: true,
+  }
 );
 
-const GroupMeeting = mongoose.model("GroupMeeting", groupMeetingSchema);
+// Associations
+User.hasMany(GroupMeeting, { foreignKey: "created_by" });
+GroupMeeting.belongsTo(User, { foreignKey: "created_by" });
 
-export default GroupMeeting;
+Group.hasMany(GroupMeeting, { foreignKey: "groupId" });
+GroupMeeting.belongsTo(Group, { foreignKey: "groupId" });
+

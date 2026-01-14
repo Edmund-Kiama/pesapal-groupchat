@@ -1,29 +1,44 @@
-import mongoose from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../database/db.js";
+import User from "./user.model.js";
 
-const groupSchema = new mongoose.Schema(
+class Group extends Model {}
+
+Group.init(
   {
     name: {
-      type: String,
-      required: [true, "Group name is required"],
-      trim: true,
-      minLength: 2,
-      maxLength: 30,
+      type: DataTypes.STRING(30),
+      allowNull: false,
+      validate: {
+        len: [2, 30],
+      },
     },
     description: {
-      type: String,
-      trim: true,
-      minLength: 2,
-      maxLength: 50,
+      type: DataTypes.STRING(50),
+      allowNull: true,
+      validate: {
+        len: [2, 50],
+      },
     },
     created_by: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
   },
-  { timestamps: true }
+  {
+    sequelize,
+    modelName: "Group",
+    tableName: "groups",
+    timestamps: true, // adds createdAt and updatedAt
+  }
 );
 
-const Group = mongoose.model("Group", groupSchema);
+// Associations
+Group.belongsTo(User, { foreignKey: "created_by" });
+User.hasMany(Group, { foreignKey: "created_by" });
 
 export default Group;

@@ -1,29 +1,50 @@
-import mongoose from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../database/db.js";
+import User from "./user.model.js";
+import Group from "./group.model.js";
 
-const electionSchema = new mongoose.Schema(
+class Election extends Model {}
+
+Election.init(
   {
-    date_to: {
-      type: Date,
-      required: [true, "Date to is required"],
-    },
     date_from: {
-      type: Date,
-      required: [true, "Date from is required"],
+      type: DataTypes.DATE,
+      allowNull: false,
+    },
+    date_to: {
+      type: DataTypes.DATE,
+      allowNull: false,
     },
     groupId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Group",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Group,
+        key: "id",
+      },
     },
     created_by: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
   },
-  { timestamps: true }
+  {
+    sequelize,
+    modelName: "Election",
+    tableName: "elections",
+    timestamps: true,
+  }
 );
 
-const Election = mongoose.model("Election", electionSchema);
+// Associations
+Group.hasMany(Election, { foreignKey: "groupId" });
+Election.belongsTo(Group, { foreignKey: "groupId" });
+
+User.hasMany(Election, { foreignKey: "created_by", as: "CreatedElections" });
+Election.belongsTo(User, { foreignKey: "created_by", as: "Creator" });
 
 export default Election;

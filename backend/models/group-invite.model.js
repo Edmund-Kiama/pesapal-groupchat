@@ -1,36 +1,57 @@
-import mongoose from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../database/db.js";
+import User from "./user.model.js";
+import Group from "./group.model.js";
 
-const groupInviteSchema = new mongoose.Schema(
+class GroupInvite extends Model {}
+
+GroupInvite.init(
   {
     senderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
     receiverId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
     groupId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Group",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Group,
+        key: "id",
+      },
     },
     status: {
-      type: String,
-      enum: {
-        values: ["pending", "accepted", "declined"],
-        message: "{VALUE} is not a valid status",
-      },
-      default: "pending",
-      lowercase: true,
-      trim: true,
+      type: DataTypes.ENUM("pending", "accepted", "declined"),
+      allowNull: false,
+      defaultValue: "pending",
     },
   },
-  { timestamps: true }
+  {
+    sequelize,
+    modelName: "GroupInvite",
+    tableName: "group_invites",
+    timestamps: true,
+  }
 );
 
-const GroupInvite = mongoose.model("GroupInvite", groupInviteSchema);
+// Associations
+User.hasMany(GroupInvite, { foreignKey: "senderId", as: "SentInvites" });
+User.hasMany(GroupInvite, { foreignKey: "receiverId", as: "ReceivedInvites" });
+GroupInvite.belongsTo(User, { foreignKey: "senderId", as: "Sender" });
+GroupInvite.belongsTo(User, { foreignKey: "receiverId", as: "Receiver" });
+
+Group.hasMany(GroupInvite, { foreignKey: "groupId" });
+GroupInvite.belongsTo(Group, { foreignKey: "groupId" });
 
 export default GroupInvite;

@@ -1,32 +1,67 @@
-import mongoose from "mongoose";
+import { DataTypes, Model } from "sequelize";
+import { sequelize } from "../database/db.js";
+import User from "./user.model.js";
+import Position from "./position.model.js";
+import Election from "./election.model.js";
 
-const candidateSchema = new mongoose.Schema(
+class Candidate extends Model {}
+
+Candidate.init(
   {
     userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
       unique: true,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
     positionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Position",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Position,
+        key: "id",
+      },
     },
     electionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Election",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: Election,
+        key: "id",
+      },
     },
     nominated_by: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: User,
+        key: "id",
+      },
     },
   },
-  { timestamps: true }
+  {
+    sequelize,
+    modelName: "Candidate",
+    tableName: "candidates",
+    timestamps: true,
+  }
 );
 
-const Candidate = mongoose.model("Candidate", candidateSchema);
+// Associations
+User.hasOne(Candidate, { foreignKey: "userId" });
+Candidate.belongsTo(User, { foreignKey: "userId" });
+
+Position.hasMany(Candidate, { foreignKey: "positionId" });
+Candidate.belongsTo(Position, { foreignKey: "positionId" });
+
+Election.hasMany(Candidate, { foreignKey: "electionId" });
+Candidate.belongsTo(Election, { foreignKey: "electionId" });
+
+User.hasMany(Candidate, { foreignKey: "nominated_by", as: "Nominations" });
+Candidate.belongsTo(User, { foreignKey: "nominated_by", as: "Nominator" });
 
 export default Candidate;
+s
