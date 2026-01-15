@@ -1,11 +1,18 @@
 import sendEmail from "../utils/send-email.js";
-import GroupMeeting from "../models/group-meeting.model.js";
-import GroupMember from "../models/group-member.model.js";
-import Notification from "../models/notification.model.js";
 import { formatDateTime } from "../utils/date-time.format.js";
-import User from "../models/user.model.js";
+import {
+  User,
+  Notification,
+  GroupMeeting,
+  GroupMeetingInvite,
+  GroupMember,
+  Group,
+} from "../models/index.js";
+import { sequelize } from "../database/db.js";
 
 export const createGroupMeeting = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+
   try {
     const { location, invited, groupId, time } = req.body;
     const user = req.user; // from authentication middleware
@@ -24,109 +31,121 @@ export const createGroupMeeting = async (req, res, next) => {
       });
     }
 
-    let invitedArray = [];
+    // get invited users
+    let invitedUsers = [];
     let groupMembers = [];
-    if (Array.isArray(invited) && invited.length > 0) {
-      //only this invited
-      invitedArray = invited.map((userId) => ({ userId }));
-    } else {
-      //all group members
-      groupMembers = await GroupMember.find({ groupId })
-        .select("userId")
-        .populate("userId", "email")
-        .lean();
 
-      invitedArray = groupMembers.map((member) => ({
-        userId: member?.userId?._id,
+    if (Array.isArray(invited) && invited.length > 0) {
+      invitedUsers = invited.map((id) => ({ userId: id }));
+    } else {
+      // fetch all members of the group
+      groupMembers = await GroupMember.findAll({
+        where: { groupId },
+        include: [{ model: User, attributes: ["id", "email", "name"] }],
+      });
+
+      invitedUsers = groupMembers.map((member) => ({
+        userId: member.userId.id,
       }));
     }
 
-    // create the meeting
-    const groupMeeting = await GroupMeeting.create({
-      location,
-      groupId,
-      time,
-      created_by: user?._id,
-      invited: invitedArray,
-    });
+    // create the group meeting
+    const groupMeeting = await GroupMeeting.create(
+      {
+        location,
+        groupId,
+        time_from: time.from,
+        time_to: time.to,
+        created_by: user.id,
+      },
+      { transaction }
+    );
 
-    await Promise.all([
-      //notify creator
+    // create invites
+    const invites = await Promise.all(
+      invitedUsers.map((u) =>
+        GroupMeetingInvite.create({
+          meetingId: groupMeeting.id,
+          userId: u.userId,
+          invitedBy: user.id,
+        })
+      )
+    );
+    await transaction.commit();
+
+    // send notifications & emails
+    const notifications = [
       Notification.create({
-        userId: user?._id,
+        userId: user.id,
         type: "GROUP_MEETING_CREATED",
         message: "You have created a group meeting",
-        metadata: { groupId, meetingId: groupMeeting._id },
+        groupId,
+        meetingId: groupMeeting.id,
       }),
-
-      sendEmail({
-        to: user?.email,
-        subject: "New Group Meeting",
-        message: `You have created a group meeting from ${formatDateTime(
-          time.from
-        )} to ${formatDateTime(time.to)} located at ${location}`,
-        html: `
-         <p>You have created a group meeting. See below for details </p>
-         <p>Time from: ${formatDateTime(time.from)} </p>
-         <p>Time to: ${formatDateTime(time.to)} </p>
-         <p>Location: ${location} </p>
-         ${
-           invitedArray.length > 0
-             ? `<p>Invited Guests: ${invitedArray.length} </p>`
-             : ""
-         }
-         <p>You will receive notifications on the guests' response to the meeting .</p>
-       `,
-      }),
-
-      //notify those invited
-      ...invitedArray.map((user) =>
+      ...invites.map((invite) =>
         Notification.create({
-          userId: user?.userId,
+          userId: invite.userId,
           type: "GROUP_MEETING_INVITATION",
           message: `You have been invited to a group meeting from ${formatDateTime(
             time.from
-          )} to ${formatDateTime(time.to)} located at ${location}`,
-          metadata: { groupId, meetingId: groupMeeting._id },
+          )} to ${formatDateTime(time.to)} at ${location}`,
+          groupId,
+          meetingId: groupMeeting.id,
         })
       ),
+    ];
 
+    const emails = [
+      sendEmail({
+        to: user.email,
+        subject: "New Group Meeting",
+        message: `You have created a group meeting from ${formatDateTime(
+          time.from
+        )} to ${formatDateTime(time.to)} at ${location}`,
+        html: `
+          <p>Group Meeting Details:</p>
+          <p>Location: ${location}</p>
+          <p>From: ${formatDateTime(time.from)}</p>
+          <p>To: ${formatDateTime(time.to)}</p>
+          <p>Total Invited: ${invitedUsers.length}</p>
+        `,
+      }),
       ...groupMembers.map((member) =>
         sendEmail({
-          to: member?.userId?.email,
+          to: member.userId.email,
           subject: "Group Meeting Invite",
-          message: `${
-            user.name
-          } has invited you to a group meeting from ${formatDateTime(
-            time.from
-          )} to ${formatDateTime(time.to)} located at ${location}`,
+          message: `${user.name} has invited you to a group meeting.`,
           html: `
-           <p>You have been invited to a group meeting. See below for details </p>
-           <p>Time from: ${formatDateTime(time.from)} </p>
-           <p>Time to: ${formatDateTime(time.to)} </p>
-           <p>Location: ${location} </p>
-           <p>Your response will be sent to ${user.name}.</p>
-         `,
+            <p>Group Meeting Details:</p>
+            <p>Location: ${location}</p>
+            <p>From: ${formatDateTime(time.from)}</p>
+            <p>To: ${formatDateTime(time.to)}</p>
+            <p>Organizer: ${user.name}</p>
+          `,
         })
       ),
-    ]);
+    ];
 
-    // return
+    await Promise.all([...notifications, ...emails]);
+
     res.status(201).json({
       success: true,
       message: "Group Meeting created successfully",
-      data: groupMeeting,
+      data: groupMeeting?.toJSON(),
     });
   } catch (error) {
-    console.error(error)
+    await transaction.rollback();
+    console.error(error);
     next(error);
   }
 };
 
 export const groupMeetingResponse = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+
   try {
     const { meetingId, status } = req.body;
-    const user = req?.user;
+    const user = req.user;
 
     // check missing fields
     const missingFields = [];
@@ -140,7 +159,7 @@ export const groupMeetingResponse = async (req, res, next) => {
       });
     }
 
-    //  validate status
+    // validate status
     const allowedStatuses = ["accepted", "declined"];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
@@ -149,166 +168,178 @@ export const groupMeetingResponse = async (req, res, next) => {
       });
     }
 
-    // update the meeting
-    const groupMeeting = await GroupMeeting.findOneAndUpdate(
-      { _id: meetingId, "invited.userId": user?._id },
-      { $set: { "invited.$.status": status } },
-      { new: true }
-    )
-      .populate({
-        path: "invited.userId",
-        select: "name email",
-      })
-      .lean();
+    // find the invite
+    const invite = await GroupMeetingInvite.findOne({
+      where: { meetingId, userId: user.id },
+      include: [
+        {
+          model: GroupMeeting,
+          include: [
+            {
+              model: User,
+              as: "created_by",
+              attributes: ["id", "name", "email"],
+            },
+          ],
+        },
+      ],
+    });
 
-    if (!groupMeeting) {
+    if (!invite) {
       return res.status(404).json({
         success: false,
         message: "Invite not found for this user",
       });
     }
 
-    const groupId = groupMeeting?.groupId;
-    const meetingCreatorId = groupMeeting?.created_by;
-    const meetingCreator = await User.findById(meetingCreatorId);
+    // update status
+    invite.status = status;
+    await invite.save({ transaction });
+    await transaction.commit();
 
-    if (!meetingCreator) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Something went wrong. Please check if the creator of this meeting exists.",
-      });
-    }
+    const groupMeeting = invite.GroupMeeting;
+    const meetingCreator = groupMeeting.created_by;
 
-    let notificationType;
-    if (status === "accepted") {
-      notificationType = "GROUP_MEETING_ACCEPTED";
-    } else if (status === "declined") {
-      notificationType = "GROUP_MEETING_DECLINED";
-    }
+    const groupId = groupMeeting.groupId;
 
+    let notificationType =
+      status === "accepted"
+        ? "GROUP_MEETING_ACCEPTED"
+        : "GROUP_MEETING_DECLINED";
+
+    // notifications & emails
     await Promise.all([
-      // notify sender(admin)
+      // notify meeting creator
       Notification.create({
-        userId: meetingCreatorId,
+        userId: meetingCreator.id,
         type: notificationType,
-        message: `${user?.name} ${status} to attend group meeting at ${
+        message: `${user.name} ${status} to attend group meeting at ${
           groupMeeting.location
-        } from ${formatDateTime(groupMeeting.time.from)} to ${formatDateTime(
-          groupMeeting.time.to
+        } from ${formatDateTime(groupMeeting.time_from)} to ${formatDateTime(
+          groupMeeting.time_to
         )}`,
-        metadata: {
-          groupId,
-          meetingId,
-        },
+        groupId,
+        meetingId,
       }),
       sendEmail({
-        to: meetingCreator?.email,
+        to: meetingCreator.email,
         subject: "Group Meeting Invite Response",
-        message: `${
-          user?.name
-        } has ${status} your meeting invite from ${formatDateTime(
-          groupMeeting.time.from
-        )} to ${formatDateTime(groupMeeting.time.to)} to be held at ${
-          groupMeeting?.location
-        }`,
+        message: `${user.name} has ${status} your meeting invite.`,
         html: `
-           <p>${
-             user?.name
-           } has <strong>${status}</strong> your group meeting invite. See meeting details below.</p>
-           <p>Time from: ${formatDateTime(groupMeeting.time.from)} </p>
-           <p>Time to: ${formatDateTime(groupMeeting.time.to)} </p>
-           <p>Location: ${groupMeeting?.location} </p>
-           ${
-             groupMeeting?.invited?.length > 0
-               ? `<p>Invited Guests: ${groupMeeting?.invited?.length} </p>`
-               : ""
-           }`,
+          <p>${
+            user.name
+          } has <strong>${status}</strong> your group meeting invite.</p>
+          <p>Time from: ${formatDateTime(groupMeeting.time_from)}</p>
+          <p>Time to: ${formatDateTime(groupMeeting.time_to)}</p>
+          <p>Location: ${groupMeeting.location}</p>
+        `,
       }),
       // notify user
       Notification.create({
-        userId: user._id,
+        userId: user.id,
         type: notificationType,
         message: `You have ${status} to attend the group meeting at ${
           groupMeeting.location
-        } from ${formatDateTime(groupMeeting.time.from)} to ${formatDateTime(
-          groupMeeting.time.to
+        } from ${formatDateTime(groupMeeting.time_from)} to ${formatDateTime(
+          groupMeeting.time_to
         )}`,
-        metadata: {
-          groupId,
-          meetingId,
-        },
+        groupId,
+        meetingId,
       }),
       sendEmail({
-        to: user?.email,
+        to: user.email,
         subject: "Group Meeting Invite Response",
-        message: `You have ${status} ${
-          meetingCreator?.name
-        } meeting invite from ${formatDateTime(
-          groupMeeting.time.from
-        )} to ${formatDateTime(groupMeeting.time.to)} to be held at ${
-          groupMeeting?.location
-        }`,
+        message: `You have ${status} the meeting invite from ${meetingCreator.name}.`,
         html: `
-           <p>You have <strong>${status}</strong> ${
-          meetingCreator?.name
-        } meeting invite. See meeting details below.</p>
-           <p>Time from: ${formatDateTime(groupMeeting.time.from)} </p>
-           <p>Time to: ${formatDateTime(groupMeeting.time.to)} </p>
-           <p>Location: ${groupMeeting?.location} </p>
-           ${
-             groupMeeting?.invited?.length > 0
-               ? `<p>Invited Guests: ${groupMeeting?.invited?.length} </p>`
-               : ""
-           }`,
+          <p>You have <strong>${status}</strong> the meeting invite from ${
+          meetingCreator.name
+        }.</p>
+          <p>Time from: ${formatDateTime(groupMeeting.time_from)}</p>
+          <p>Time to: ${formatDateTime(groupMeeting.time_to)}</p>
+          <p>Location: ${groupMeeting.location}</p>
+        `,
       }),
     ]);
 
-    // return
     res.status(200).json({
       success: true,
       message: "Group Meeting response was successful",
       data: groupMeeting,
     });
   } catch (error) {
-    console.error(error)
+    await transaction.rollback();
+    console.error(error);
     next(error);
   }
 };
 
 export const getGroupMeetings = async (req, res, next) => {
   try {
-    //get all records
-    const meetings = await GroupMeeting.find()
-      .populate("groupId", "name description")
-      .populate("created_by", "name")
-      .populate({
-        path: "invited.userId",
-        select: "name email",
-      })
-      .lean();
+    // fetch all meetings with related group, creator, and invited users
+    const meetings = await GroupMeeting.findAll({
+      include: [
+        {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name", "description"],
+        },
+        {
+          model: User,
+          as: "created_by",
+          attributes: ["id", "name"],
+        },
+        {
+          model: GroupMeetingInvite,
+          as: "invited",
+          include: [
+            {
+              model: User,
+              attributes: ["id", "name", "email"],
+            },
+          ],
+        },
+      ],
+    });
 
-    // return all records
     res.status(200).json({
       success: true,
-      data: meetings,
+      data: meetings?.map((m) => m?.toJSON()),
     });
   } catch (error) {
+    console.error(error);
     next(error);
   }
 };
 
-export const getGroupMeetingsById = async (req, res, next) => {
+export const getGroupMeetingById = async (req, res, next) => {
   try {
     const { meetingId } = req.params;
-    const meeting = await GroupMeeting.findById(meetingId)
-      .populate("groupId", "name description")
-      .populate("created_by", "name")
-      .populate({
-        path: "invited.userId",
-        select: "name email",
-      })
-      .lean();
+
+    // fetch meeting with related group, creator, and invited users
+    const meeting = await GroupMeeting.findByPk(meetingId, {
+      include: [
+        {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name", "description"],
+        },
+        {
+          model: User,
+          as: "created_by",
+          attributes: ["id", "name"],
+        },
+        {
+          model: GroupMeetingInvite,
+          as: "invited",
+          include: [
+            {
+              model: User,
+              attributes: ["id", "name", "email"],
+            },
+          ],
+        },
+      ],
+    });
 
     if (!meeting) {
       return res.status(404).json({
@@ -319,11 +350,10 @@ export const getGroupMeetingsById = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: meeting,
+      data: meeting?.toJSON(),
     });
   } catch (error) {
     console.error(error);
-
     next(error);
   }
 };
@@ -331,28 +361,42 @@ export const getGroupMeetingsById = async (req, res, next) => {
 export const getGroupMeetingsByGroupId = async (req, res, next) => {
   try {
     const { groupId } = req.params;
-    const meeting = await GroupMeeting.find({ groupId })
-      .populate("created_by", "name")
-      .populate({
-        path: "invited.userId",
-        select: "name email",
-      })
-      .lean();
 
-    if (!meeting) {
+    // fetch all meetings for this group
+    const meetings = await GroupMeeting.findAll({
+      where: { groupId },
+      include: [
+        {
+          model: User,
+          as: "created_by",
+          attributes: ["id", "name"],
+        },
+        {
+          model: GroupMeetingInvite,
+          as: "invited",
+          include: [
+            {
+              model: User,
+              attributes: ["id", "name", "email"],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!meetings || meetings.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "Meeting was not found",
+        message: "No meetings found for this group",
       });
     }
 
     res.status(200).json({
       success: true,
-      data: meeting,
+      data: meetings?.map((m) => m?.toJSON()),
     });
   } catch (error) {
     console.error(error);
-
     next(error);
   }
 };

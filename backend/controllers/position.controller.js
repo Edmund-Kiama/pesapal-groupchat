@@ -1,14 +1,20 @@
-import Candidate from "../models/candidate.model.js";
-import Position from "../models/position.model.js";
-import Notification from "../models/notification.model.js";
+import {
+  Notification,
+  Position,
+  Candidate,
+  User,
+  Election,
+} from "../models/index.js";
+import { sequelize } from "../database/db.js";
 
 // create position
 export const createPosition = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
   try {
-    //destructure
     const { position, electionId } = req.body;
-    const adminId = req.user._id; // from authentication mIddleware
+    const adminId = req.user.id; // Sequelize uses 'id' not '_id'
 
+    // check missing fields
     const missingFields = [];
     if (!electionId) missingFields.push("electionId");
     if (!position) missingFields.push("position");
@@ -20,28 +26,33 @@ export const createPosition = async (req, res, next) => {
       });
     }
 
-    //create the election
-    const positionCreated = await Position.create({
-      position,
-      electionId,
-      created_by: adminId,
-    });
+    // create the position
+    const positionCreated = await Position.create(
+      {
+        position,
+        electionId,
+        created_by: adminId,
+      },
+      { transaction }
+    );
 
+    await transaction.commit();
+
+    // create notification
     await Notification.create({
       userId: adminId,
       type: "POSITION_CREATED",
       message: `A new position has been created: ${position}`,
-      metadata: { positionId: positionCreated._id,  },
+      positionId: positionCreated.id,
     });
 
-      //return
-      res.status(201).json({
-        success: true,
-        message: "Position created successfully",
-        data: positionCreated,
-      });
-
+    res.status(201).json({
+      success: true,
+      message: "Position created successfully",
+      data: positionCreated?.toJSON(),
+    });
   } catch (error) {
+    await transaction.rollback();
     next(error);
   }
 };
@@ -49,20 +60,20 @@ export const createPosition = async (req, res, next) => {
 // get all position
 export const getPositions = async (req, res, next) => {
   try {
-    //get all records
-    const positions = await Position.find()
-      .populate("electionId", "date_to date_from groupId")
-      .lean();
-
-    const transformed = positions.map((position) => {
-      const { electionId, ...rest } = position;
-      return { ...rest, election: electionId };
+    // fetch all positions with their election
+    const positions = await Position.findAll({
+      include: [
+        {
+          model: Election,
+          as: "election",
+          attributes: ["id", "date_from", "date_to", "groupId"],
+        },
+      ],
     });
 
-    // return all records
     res.status(200).json({
       success: true,
-      data: transformed,
+      data: positions?.map((p) => p?.toJSON()),
     });
   } catch (error) {
     next(error);
@@ -72,11 +83,18 @@ export const getPositions = async (req, res, next) => {
 // get one position by Id
 export const getPositionById = async (req, res, next) => {
   try {
-    const positionId = req.params.positionId;
-    const position = await Position.findById(positionId).populate(
-      "electionId",
-      "date_to date_from groupId"
-    );
+    const { positionId } = req.params;
+
+    // fetch position by primary key with election association
+    const position = await Position.findByPk(positionId, {
+      include: [
+        {
+          model: Election,
+          as: "election",
+          attributes: ["id", "date_from", "date_to", "groupId"],
+        },
+      ],
+    });
 
     if (!position) {
       return res.status(404).json({
@@ -87,7 +105,7 @@ export const getPositionById = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: position,
+      data: position?.toJSON(),
     });
   } catch (error) {
     next(error);
@@ -96,32 +114,41 @@ export const getPositionById = async (req, res, next) => {
 
 // delete position by Id
 export const deletePosition = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+
   try {
-    const positionId = req.params.positionId;
-    const position = await Position.findByIdAndDelete(positionId);
-    const user = req.user
+    const { positionId } = req.params;
+    const user = req.user;
+
+    // find the position first
+    const position = await Position.findByPk(positionId, { transaction });
 
     if (!position) {
+      await transaction.rollback();
       return res.status(404).json({
         success: false,
         message: "Position was not found",
       });
     }
 
+    // delete the position
+    await position.destroy({ transaction });
+
+    await transaction.commit();
+    // create notification
     await Notification.create({
-      userId: adminId,
+      userId: user.id, // assuming req.user has id
       type: "POSITION_DELETED",
       message: `The position ${position.position} has been deleted by ${user.name}`,
-      metadata: { positionId: positionCreated._id,  },
+      positionId: position.id,
     });
 
     res.status(200).json({
       success: true,
       message: "Position was deleted successfully",
     });
-
-
   } catch (error) {
+    await transaction.rollback();
     next(error);
   }
 };
@@ -129,27 +156,35 @@ export const deletePosition = async (req, res, next) => {
 //get candidates for a position
 export const getPositionCandidates = async (req, res, next) => {
   try {
-    const positionId = req.params.positionId;
-    const candidates = await Candidate.find({ positionId })
-      .populate("userId", "-password")
-      .populate("nominated_by", "name")
-      .lean();
+    const { positionId } = req.params;
 
-    if (!candidates) {
+    // fetch candidates for this position with associations
+    const candidates = await Candidate.findAll({
+      where: { positionId },
+      include: [
+        {
+          model: User,
+          as: "nominated",
+          attributes: ["id", "name", "email", "role"],
+        },
+        {
+          model: User,
+          as: "nominated_by",
+          attributes: ["id", "name"],
+        },
+      ],
+    });
+
+    if (!candidates || candidates.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Candidate not found",
       });
     }
 
-    const transformed = candidates.map((candidate) => {
-      const { userId, ...rest } = candidate;
-      return { nominated: userId, ...rest };
-    });
-
     res.status(200).json({
       success: true,
-      data: transformed,
+      data: candidates?.map((c) => c?.toJSON()),
     });
   } catch (error) {
     next(error);

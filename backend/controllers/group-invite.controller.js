@@ -1,14 +1,18 @@
-import GroupInvite from "../models/group-invite.model.js";
-import GroupMember from "../models/group-member.model.js";
+import {
+  GroupInvite,
+  GroupMember,
+  User,
+  Group,
+  Notification,
+} from "../models/index.js";
+import { sequelize } from "../database/db.js";
 import sendEmail from "../utils/send-email.js";
-import Notification from "../models/notification.model.js";
-import User from "../models/user.model.js";
-import Group from "../models/group.model.js";
 
 export const createGroupInvite = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
   try {
     const { receiverId, groupId } = req.body;
-    const senderId = req.user._id; // from authentication middleware
+    const senderId = req.user.id; // from authentication middleware
 
     // check missing fields
     const missingFields = [];
@@ -22,8 +26,10 @@ export const createGroupInvite = async (req, res, next) => {
       });
     }
 
-    const user = await User.findById(receiverId);
-    const group = await Group.findById(groupId);
+    // verify user and group exist
+    const user = await User.findByPk(receiverId);
+    const group = await Group.findByPk(groupId);
+
     if (!user || !group) {
       return res.status(400).json({
         success: false,
@@ -32,28 +38,35 @@ export const createGroupInvite = async (req, res, next) => {
     }
 
     // create the invite
-    const groupInvite = await GroupInvite.create({
-      receiverId,
-      groupId,
-      senderId,
-    });
+    const groupInvite = await GroupInvite.create(
+      {
+        receiverId,
+        groupId,
+        senderId,
+      },
+      { transaction }
+    );
+    await transaction.commit();
 
+    // notifications and email
     await Promise.all([
       Notification.create({
         userId: receiverId,
         type: "GROUP_INVITE_CREATED",
         message: "You have been invited to join a group",
-        metadata: { groupId, inviteId: groupInvite?._id },
+        groupId,
+        inviteId: groupInvite.id,
       }),
       sendEmail({
-        to: user?.email,
+        to: user.email,
         subject: "Group Invitation",
-        message: `You have been invited to join the group ${group?.name}`,
+        message: `You have been invited to join the group ${group.name}`,
         html: `
-       <p>You have been invited to join the group ${group?.name}. See below for details </p>
-       <p>Group name: ${group?.name} </p>
-       <p>Group description: ${group?.description} </p>
-       <p>Please login for more details.</p>`,
+          <p>You have been invited to join the group <strong>${group.name}</strong>. See below for details:</p>
+          <p>Group name: ${group.name}</p>
+          <p>Group description: ${group.description}</p>
+          <p>Please login for more details.</p>
+        `,
       }),
     ]);
 
@@ -61,18 +74,21 @@ export const createGroupInvite = async (req, res, next) => {
     res.status(201).json({
       success: true,
       message: "Group Invite created successfully",
-      data: groupInvite,
+      data: groupInvite?.toJSON(),
     });
   } catch (error) {
+    await transaction.rollback();
     console.error(error);
     next(error);
   }
 };
 
 export const groupInviteResponse = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+
   try {
     const { groupInviteId, status } = req.body;
-    const user = req.user;
+    const userId = req.user.id; // from authentication middleware
 
     // check missing fields
     const missingFields = [];
@@ -96,19 +112,13 @@ export const groupInviteResponse = async (req, res, next) => {
     }
 
     // update invite ONLY if still pending
-    const updatedInvite = await GroupInvite.findOneAndUpdate(
-      {
-        _id: groupInviteId,
-        status: "pending",
-      },
-      {
-        $set: { status },
-      },
-      { new: true }
-    )
-      .populate("groupId", "name description")
-      .populate("senderId", "email")
-      .lean();
+    const updatedInvite = await GroupInvite.findOne({
+      where: { id: groupInviteId, status: "pending" },
+      include: [
+        { model: Group, as: "group", attributes: ["name", "description"] },
+        { model: User, as: "sender", attributes: ["email", "id"] },
+      ],
+    });
 
     if (!updatedInvite) {
       return res.status(404).json({
@@ -117,14 +127,17 @@ export const groupInviteResponse = async (req, res, next) => {
       });
     }
 
-    let notificationType =
+    // update status
+    updatedInvite.status = status;
+    await updatedInvite.save({ transaction });
+
+    const notificationType =
       status === "accepted" ? "GROUP_INVITE_ACCEPTED" : "GROUP_INVITE_DECLINED";
 
     // if accepted → add member + notify
     if (status === "accepted") {
       const existingMember = await GroupMember.findOne({
-        userId: user._id,
-        groupId: updatedInvite.groupId._id,
+        where: { userId, groupId: updatedInvite.groupId },
       });
 
       if (existingMember) {
@@ -134,57 +147,59 @@ export const groupInviteResponse = async (req, res, next) => {
         });
       }
 
-      await GroupMember.create({
-        userId: user._id,
-        groupId: updatedInvite.groupId._id,
-        joined_at: Date.now(),
-      });
+      await GroupMember.create(
+        {
+          userId,
+          groupId: updatedInvite.groupId,
+          joined_at: new Date(),
+        },
+        { transaction }
+      );
     }
 
+    await transaction.commit();
+
+    // notifications
     const notifications = [
-      //notify admin
       Notification.create({
         userId: updatedInvite.senderId,
         type: notificationType,
-        message: `${user.name} has ${status} your group invite`,
-        metadata: {
-          groupId: updatedInvite.groupId._id,
-          inviteId: updatedInvite._id,
-        },
-      }), // notify user
+        message: `${req.user.name} has ${status} your group invite`,
+        groupId: updatedInvite.groupId,
+        inviteId: updatedInvite.id,
+      }),
       Notification.create({
-        userId: user._id,
+        userId,
         type: notificationType,
-        message: `You have ${status} an invite to the group "${updatedInvite?.groupId?.name}"`,
-        metadata: {
-          groupId: updatedInvite.groupId._id,
-          inviteId: updatedInvite._id,
-        },
+        message: `You have ${status} an invite to the group "${updatedInvite.group.name}"`,
+        groupId: updatedInvite.groupId,
+        inviteId: updatedInvite.id,
       }),
     ];
 
+    // emails
     const emails = [
-      //email to admin
       sendEmail({
-        to: updatedInvite?.senderId?.email,
+        to: updatedInvite.sender.email,
         subject: "Group Invitation Response",
-        message: `${user?.name} has ${status} to join the group ${updatedInvite?.groupId?.name}`,
+        message: `${req.user.name} has ${status} to join the group ${updatedInvite.group.name}`,
         html: `
-          <p>${user?.name} has <strong>${status}</strong> to join the group ${updatedInvite?.groupId?.name}. See below for details </p>
-          <p>Group name: ${updatedInvite?.groupId?.name}</p>
-          <p>Group description: ${updatedInvite?.groupId?.description} </p>
-          <p>Please login for more details.</p>`,
+          <p>${req.user.name} has <strong>${status}</strong> to join the group ${updatedInvite.group.name}</p>
+          <p>Group name: ${updatedInvite.group.name}</p>
+          <p>Group description: ${updatedInvite.group.description}</p>
+          <p>Please login for more details.</p>
+        `,
       }),
-      //email to user
       sendEmail({
-        to: user?.email,
+        to: req.user.email,
         subject: "Group Invitation Response",
-        message: `You have ${status} an invite to join the group "${updatedInvite?.groupId?.name}"`,
+        message: `You have ${status} an invite to join the group "${updatedInvite.group.name}"`,
         html: `
-          <p>You have ${status} an invite to join the group "${updatedInvite?.groupId?.name}" See below for details </p>
-          <p>Group name: ${updatedInvite?.groupId?.name}</p>
-          <p>Group description: ${updatedInvite?.groupId?.description} </p>
-          <p>Please login for more details.</p>`,
+          <p>You have ${status} an invite to join the group "${updatedInvite.group.name}"</p>
+          <p>Group name: ${updatedInvite.group.name}</p>
+          <p>Group description: ${updatedInvite.group.description}</p>
+          <p>Please login for more details.</p>
+        `,
       }),
     ];
 
@@ -193,32 +208,39 @@ export const groupInviteResponse = async (req, res, next) => {
     res.status(200).json({
       success: true,
       message: "Group Invite updated successfully",
-      data: updatedInvite,
+      data: updatedInvite?.toJSON(),
     });
   } catch (error) {
+    await transaction.rollback();
     console.error(error);
     next(error);
   }
 };
 
-
 export const groupInviteSentBySender = async (req, res, next) => {
   try {
     const { senderId } = req.params;
-    const invitesSent = await GroupInvite.find({ senderId })
-      .populate("receiverId", "name")
-      .populate("groupId", "name description")
-      .lean();
 
-    const transformed = invitesSent.map(({ receiverId, groupId, ...rest }) => ({
-      ...rest,
-      receiver: receiverId,
-      group: groupId,
-    }));
+    // fetch all invites sent by this sender
+    const invitesSent = await GroupInvite.findAll({
+      where: { senderId },
+      include: [
+        {
+          model: User,
+          as: "receiver",
+          attributes: ["id", "name", "email", "role"],
+        },
+        {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name", "description"],
+        },
+      ],
+    });
 
     res.status(200).json({
       success: true,
-      data: transformed,
+      data: invitesSent?.map((is) => is?.toJSON()),
     });
   } catch (error) {
     next(error);
@@ -228,20 +250,27 @@ export const groupInviteSentBySender = async (req, res, next) => {
 export const groupInviteReceivedByReceiver = async (req, res, next) => {
   try {
     const { receiverId } = req.params;
-    const invitesReceived = await GroupInvite.find({ receiverId })
-      .populate("senderId", "name")
-      .populate("groupId", "name description")
-      .lean();
 
-    const transformed = invitesSent.map(({ senderId, groupId, ...rest }) => ({
-      ...rest,
-      sender: senderId,
-      group: groupId,
-    }));
+    // fetch all invites received by this user
+    const invitesReceived = await GroupInvite.findAll({
+      where: { receiverId },
+      include: [
+        {
+          model: User,
+          as: "sender",
+          attributes: ["id", "name", "email", "role"],
+        },
+        {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name", "description"],
+        },
+      ],
+    });
 
     res.status(200).json({
       success: true,
-      data: transformed,
+      data: invitesReceived?.map((ir) => ir?.toJSON()),
     });
   } catch (error) {
     next(error);

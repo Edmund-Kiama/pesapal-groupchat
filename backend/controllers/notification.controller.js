@@ -1,22 +1,22 @@
-import Notification from "../models/notification.model.js";
-import GroupMember from "../models/group-member.model.js";
-import mongoose from "mongoose";
-
-// list all notifications
-// list notifications by userId
+import { GroupMember, User, Notification } from "../models/index.js";
 
 export const getNotifications = async (req, res, next) => {
   try {
-    //get all records
-    const notifications = await Notification.find()
-      .populate("userId", "name email role")
-      .sort({ createdAt: -1 })
-      .lean();
+    // fetch all notifications with associated user info
+    const notifications = await Notification.findAll({
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name",  "role"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
 
-    // return all records
     res.status(200).json({
       success: true,
-      data: notifications,
+      data: notifications.map((n) => n.toJSON()),
     });
   } catch (error) {
     next(error);
@@ -25,16 +25,24 @@ export const getNotifications = async (req, res, next) => {
 
 export const getUserNotifications = async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
 
-    const notifications = await Notification.find({ userId })
-      .populate("userId", "name email role")
-      .sort({ createdAt: -1 })
-      .lean();
+    // fetch notifications for this user
+    const notifications = await Notification.findAll({
+      where: { userId },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "role"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
 
     res.status(200).json({
       success: true,
-      data: notifications,
+      data: notifications.map((n) => n.toJSON()),
     });
   } catch (error) {
     next(error);
@@ -44,14 +52,14 @@ export const getUserNotifications = async (req, res, next) => {
 export const getNotificationsByGroupId = async (req, res, next) => {
   try {
     const { groupId } = req.params;
-    const groupObjectId = new mongoose.Types.ObjectId(groupId);
+    const userId = req.user.id;
 
-    const user = req.user;
-
-    // verify membership
-    const isMember = await GroupMember.exists({
-      userId: user?._id,
-      groupId: groupObjectId,
+    // Verify membership
+    const isMember = await GroupMember.findOne({
+      where: {
+        userId,
+        groupId,
+      },
     });
 
     if (!isMember) {
@@ -61,16 +69,24 @@ export const getNotificationsByGroupId = async (req, res, next) => {
       });
     }
 
-    const notifications = await Notification.find({
-      "metadata.groupId": groupObjectId,
-    })
-      .populate("userId", "name email role")
-      .sort({ createdAt: -1 })
-      .lean();
+    // Fetch notifications
+    const notifications = await Notification.findAll({
+      where: {
+        groupId,
+      },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "role"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
 
     res.status(200).json({
       success: true,
-      data: notifications,
+      data: notifications.map((n) => n.toJSON()),
     });
   } catch (error) {
     next(error);
@@ -80,20 +96,25 @@ export const getNotificationsByGroupId = async (req, res, next) => {
 export const getNotificationsByMeetingId = async (req, res, next) => {
   try {
     const { meetingId } = req.params;
-    const meetingObjectId = new mongoose.Types.ObjectId(meetingId);
 
-    // const userId = req.user._id;
-
-    const notifications = await Notification.find({
-      "metadata.meetingId": meetingObjectId,
-    })
-      .populate("userId", "name email role")
-      .sort({ createdAt: -1 })
-      .lean();
+    // Fetch notifications where metadata contains meetingId
+    const notifications = await Notification.findAll({
+      where: {
+        meetingId,
+      },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "role"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
 
     res.status(200).json({
       success: true,
-      data: notifications,
+      data: notifications.map((n) => n.toJSON()),
     });
   } catch (error) {
     next(error);
@@ -103,22 +124,27 @@ export const getNotificationsByMeetingId = async (req, res, next) => {
 export const getNotificationsByGroupInviteId = async (req, res, next) => {
   try {
     const { groupInviteId } = req.params;
-    const groupInviteObjectId = new mongoose.Types.ObjectId(groupInviteId);
 
-    //   const userId = req.user._id;
-
-    const notifications = await Notification.find({
-      "metadata.inviteId": groupInviteObjectId,
-    })
-      .populate("userId", "name email role")
-      .sort({ createdAt: -1 })
-      .lean();
+    // Fetch notifications where metadata contains inviteId
+    const notifications = await Notification.findAll({
+      where: {inviteId: groupInviteId
+      },
+      include: [
+        {
+          model: User,
+          as: "user", 
+          attributes: ["id", "name", "role"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
 
     res.status(200).json({
       success: true,
-      data: notifications,
+      data: notifications.map((n) => n.toJSON()),
     });
   } catch (error) {
     next(error);
   }
 };
+

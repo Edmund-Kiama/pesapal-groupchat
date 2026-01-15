@@ -1,10 +1,13 @@
-import GroupChat from "../models/group-chat.model.js";
+import { sequelize } from "../database/db.js";
+import { GroupChat, Group, User, Notification } from "../models/index.js";
 
 export const sendChat = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+
   try {
-    //destructure
+    // Destructure request body
     const { content, groupId } = req.body;
-    const senderId = req.user._id; // from authentication mIddleware
+    const senderId = req.user.id; 
 
     const missingFields = [];
     if (!content) missingFields.push("content");
@@ -17,20 +20,34 @@ export const sendChat = async (req, res, next) => {
       });
     }
 
-    //create the chat
-    const chat = await GroupChat.create({
-      content,
-      senderId,
-      groupId,
-    });
+    // Create the chat
+    const chat = await GroupChat.create(
+      {
+        content,
+        senderId,
+        groupId,
+      },
+      { transaction }
+    );
 
-    //return
+    await transaction.commit();
+
+    // await Notification.create({
+    //   userId: senderId,
+    //   type: "GROUP_CHAT",
+    //   message: content,
+    //   groupId,
+    // }),
+
+    // Return response
     res.status(201).json({
       success: true,
       message: "Chat created successfully",
-      data: chat,
+      data: chat?.toJSON(),
     });
   } catch (error) {
+    await transaction.rollback();
+    console.error(error);
     next(error);
   }
 };
@@ -38,10 +55,14 @@ export const sendChat = async (req, res, next) => {
 export const getChatById = async (req, res, next) => {
   try {
     const chatId = req.params.chatId;
-    const chat = await GroupChat.findById(chatId)
-      .populate("groupId", "name")
-      .populate("senderId", "name role")
-      .lean();
+
+    // Fetch chat by primary key with associations
+    const chat = await GroupChat.findByPk(chatId, {
+      include: [
+        { model: Group, as: "group", attributes: ["id", "name"] }, // include group info
+        { model: User, as: "sender", attributes: ["id", "name", "role"] }, // include sender info
+      ],
+    });
 
     if (!chat) {
       return res.status(404).json({
@@ -50,13 +71,9 @@ export const getChatById = async (req, res, next) => {
       });
     }
 
-    // rename groupId → group
-    const { groupId, senderId, ...rest } = chat;
-    const transformed = { ...rest, sender: senderId, group: groupId };
-
     res.status(200).json({
       success: true,
-      data: transformed,
+      data: chat?.toJSON(),
     });
   } catch (error) {
     next(error);
@@ -66,25 +83,26 @@ export const getChatById = async (req, res, next) => {
 export const getChatByGroupId = async (req, res, next) => {
   try {
     const groupId = req.params.groupId;
-    const groupChat = await GroupChat.find({ groupId })
-      .populate("senderId", "name role")
-      .lean();
 
-    if (!groupChat) {
+    // Fetch all chats for the group with sender info
+    const groupChats = await GroupChat.findAll({
+      where: { groupId },
+      include: [
+        { model: User, as: "sender", attributes: ["id", "name", "role"] },
+      ],
+      order: [["createdAt", "ASC"]],
+    });
+
+    if (groupChats.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Group Chat not found",
       });
     }
 
-    const transformed = groupChat.map(({ senderId, ...rest }) => ({
-      ...rest,
-      sender: senderId,
-    }));
-
     res.status(200).json({
       success: true,
-      data: transformed,
+      data: groupChats?.map((gc) => gc?.toJSON()),
     });
   } catch (error) {
     next(error);
@@ -94,25 +112,24 @@ export const getChatByGroupId = async (req, res, next) => {
 export const getChatByUserId = async (req, res, next) => {
   try {
     const senderId = req.params.userId;
-    const userChat = await GroupChat.find({ senderId })
-      .populate("groupId", "name")
-      .lean();
 
-    if (!userChat) {
+    // Fetch all chats sent by this user, include the group info
+    const userChats = await GroupChat.findAll({
+      where: { senderId },
+      include: [{ model: Group, as: "group", attributes: ["id", "name"] }],
+      order: [["createdAt", "ASC"]],
+    });
+
+    if (userChats.length === 0) {
       return res.status(404).json({
         success: false,
         message: "User Chat not found",
       });
     }
 
-    const transformed = userChat.map(({ groupId, ...rest }) => ({
-      ...rest,
-      group: groupId,
-    }));
-
     res.status(200).json({
       success: true,
-      data: transformed,
+      data: userChats?.map((uc) => uc?.toJSON()),
     });
   } catch (error) {
     next(error);

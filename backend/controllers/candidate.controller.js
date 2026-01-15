@@ -1,15 +1,20 @@
-import Position from "../models/position.model.js";
-import Candidate from "../models/candidate.model.js";
-import Notification from "../models/notification.model.js";
+import {
+  User,
+  Position,
+  Candidate,
+  Election,
+  Notification,
+} from "../models/index.js";
 import sendEmail from "../utils/send-email.js";
-import { formatDateTime } from "../utils/date-time.format.js";
+import { sequelize } from "../database/db.js";
 
 //create candidate
 export const nominateCandidate = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+
   try {
-    //destructure
     const { userId, positionId } = req.body;
-    const admin = req.user; // from authentication mIddleware
+    const admin = req.user;
 
     const missingFields = [];
     if (!userId) missingFields.push("userId");
@@ -22,8 +27,9 @@ export const nominateCandidate = async (req, res, next) => {
       });
     }
 
-    const position = await Position.findById(positionId);
-    const nominee = await User.findById(userId);
+    const position = await Position.findByPk(positionId, { transaction });
+    const nominee = await User.findByPk(userId, { transaction });
+
     if (!position || !nominee) {
       return res.status(400).json({
         success: false,
@@ -31,55 +37,69 @@ export const nominateCandidate = async (req, res, next) => {
       });
     }
 
-    //create the candidate
-    const candidate = await Candidate.create({
-      userId,
-      positionId,
-      electionId: position.electionId,
-      nominated_by: admin?._id,
-    });
+    const candidate = await Candidate.create(
+      {
+        userId,
+        positionId,
+        electionId: position.electionId,
+        nominated_by: admin.id,
+      },
+      { transaction }
+    );
 
-    //notify
+    await transaction.commit();
+
     await Promise.all([
-      //notify admin
+      // notify admin
       Notification.create({
-        userId: admin?._id,
+        userId: admin.id,
         type: "CANDIDATE_NOMINATED",
-        message: `You have successfully nominated ${nominee?.name} to position ${position?.position}`,
-        metadata: { groupId, electionId: election?._id, positionId },
+        message: `You have successfully nominated ${nominee.name} to position ${position.position}`,
+        positionId,
+        electionId: position.electionId,
       }),
-      //email to admin
+
       sendEmail({
-        to: admin?.email,
+        to: admin.email,
         subject: "Candidate Nomination",
-        message: `You have successfully nominated ${nominee?.name} to position ${position?.position}`,
+        message: `You have successfully nominated ${nominee.name} to position ${position.position}`,
         html: `
-               <p>You have successfully nominated <strong>${nominee?.name}</strong> to position <strong>${position?.position}</strong></p>`,
+          <p>You have successfully nominated 
+            <strong>${nominee.name}</strong> 
+            to position <strong>${position.position}</strong>
+          </p>
+        `,
       }),
-      //notify nominee
+
+      // notify nominee
       Notification.create({
-        userId: nominee?._id,
+        userId: nominee.id,
         type: "CANDIDATE_NOMINATED",
-        message: `You have been nominated to position ${position?.position} by ${admin?.name}`,
-        metadata: { groupId, electionId: election?._id, positionId },
+        message: `You have been nominated to position ${position.position} by ${admin.name}`,
+        positionId,
+        electionId: position.electionId,
       }),
-      //email to nominee
+
       sendEmail({
-        to: nominee?.email,
+        to: nominee.email,
         subject: "Candidate Nomination",
-        message: `You have been nominated to position ${position?.position} by ${admin?.name}`,
+        message: `You have been nominated to position ${position.position} by ${admin.name}`,
         html: `
-               <p>You have been nominated to position <strong>${position?.position}</strong> by <strong>${admin?.name}</strong></p>`,
+          <p>You have been nominated to position 
+            <strong>${position.position}</strong> 
+            by <strong>${admin.name}</strong>
+          </p>
+        `,
       }),
     ]);
 
-    //return
     res.status(201).json({
       success: true,
       message: "Candidate created successfully",
-      data: candidate,
+      data: candidate?.toJSON(),
     });
   } catch (error) {
+    await transaction.rollback();
     console.error(error);
     next(error);
   }
@@ -88,27 +108,34 @@ export const nominateCandidate = async (req, res, next) => {
 //list candidate
 export const getCandidates = async (req, res, next) => {
   try {
-    //get all records
-    const candidates = await Candidate.find()
-      .populate("userId", "name email role")
-      .populate("positionId", "position")
-      .populate("electionId", "date_to date_from groupId")
-      .populate("nominated_by", "name")
-      .lean();
-    const transformed = candidates.map((candidate) => {
-      const { userId, positionId, electionId, ...rest } = candidate;
-      return {
-        ...rest,
-        nominated: userId,
-        position: positionId,
-        election: electionId,
-      };
+    const candidates = await Candidate.findAll({
+      include: [
+        {
+          model: User,
+          as: "nominated",
+          attributes: ["id", "name", "email", "role"],
+        },
+        {
+          model: Position,
+          as: "position",
+          attributes: ["id", "position"],
+        },
+        {
+          model: Election,
+          as: "election",
+          attributes: ["id", "date_from", "date_to", "groupId"],
+        },
+        {
+          model: User,
+          as: "nominated_by",
+          attributes: ["id", "name"],
+        },
+      ],
     });
 
-    // return all records
     res.status(200).json({
       success: true,
-      data: transformed,
+      data: candidates?.map((c) => c?.toJSON()),
     });
   } catch (error) {
     next(error);
@@ -118,13 +145,32 @@ export const getCandidates = async (req, res, next) => {
 //get one candidate
 export const getCandidateById = async (req, res, next) => {
   try {
-    const candidateId = req.params.candidateId;
-    const candidate = await Candidate.findById(candidateId)
-    .populate("userId", "name email role")
-    .populate("positionId", "position")
-    .populate("electionId", "date_to date_from groupId")
-      .populate("nominated_by", "name")
-      .lean();
+    const { candidateId } = req.params;
+
+    const candidate = await Candidate.findByPk(candidateId, {
+      include: [
+        {
+          model: User,
+          as: "nominated",
+          attributes: ["id", "name", "email", "role"],
+        },
+        {
+          model: Position,
+          as: "position",
+          attributes: ["id", "position"],
+        },
+        {
+          model: Election,
+          as: "election",
+          attributes: ["id", "date_from", "date_to", "groupId"],
+        },
+        {
+          model: User,
+          as: "nominated_by",
+          attributes: ["id", "name"],
+        },
+      ],
+    });
 
     if (!candidate) {
       return res.status(404).json({
@@ -133,18 +179,9 @@ export const getCandidateById = async (req, res, next) => {
       });
     }
 
-    // rename groupId → group
-    const { userId, positionId, electionId, ...rest } = candidate;
-    const transformed = {
-      ...rest,
-      nominated: userId,
-      position: positionId,
-      election: electionId,
-    };
-
     res.status(200).json({
       success: true,
-      data: transformed,
+      data: candidate?.toJSON(),
     });
   } catch (error) {
     console.error(error);

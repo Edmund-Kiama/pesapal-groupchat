@@ -1,16 +1,16 @@
-import User from "../models/user.model.js";
-import GroupMember from "../models/group-member.model.js";
+import { User, GroupMember } from "../models/index.js";
 
 //get all users
 export const getUsers = async (req, res, next) => {
   try {
-    //get all records
-    const users = await User.find().select("-password");
+    // fetch all users, exclude password
+    const users = await User.findAll({
+      attributes: { exclude: ["password"] },
+    });
 
-    // return all records
     res.status(200).json({
       success: true,
-      data: users,
+      data: users?.map((u) => u?.toJSON()),
     });
   } catch (error) {
     next(error);
@@ -19,13 +19,16 @@ export const getUsers = async (req, res, next) => {
 
 export const getAdmins = async (req, res, next) => {
   try {
-    //get all records
-    const admins = await User.find({ role: "admin" }).select("-password");
+    // fetch all users with role 'admin', exclude password
+    const admins = await User.findAll({
+      where: { role: "admin" },
+      attributes: { exclude: ["password"] },
+    });
 
-    // return all records
+    // return response
     res.status(200).json({
       success: true,
-      data: admins,
+      data: admins?.map((a) => a?.toJSON()),
     });
   } catch (error) {
     next(error);
@@ -35,8 +38,12 @@ export const getAdmins = async (req, res, next) => {
 //get one user
 export const getUserById = async (req, res, next) => {
   try {
-    const userId = req.params.userId;
-    const user = await User.findById(userId).select("-password");
+    const { userId } = req.params;
+
+    // fetch user by primary key, exclude password
+    const user = await User.findByPk(userId, {
+      attributes: { exclude: ["password"] },
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -47,11 +54,11 @@ export const getUserById = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: user,
+      data: user.toJSON(),
     });
+    
   } catch (error) {
     console.error(error);
-
     next(error);
   }
 };
@@ -59,25 +66,26 @@ export const getUserById = async (req, res, next) => {
 //list groups by userId --> all groups one user has
 export const getUserGroups = async (req, res, next) => {
   try {
-    //get the user Id
-    const userId = req.params.userId;
+    const { userId } = req.params;
 
-    //find all group membership for the user
-    const memberships = await GroupMember.find({ userId })
-      .populate("groupId", "name description")
-      .lean();
+    // find all memberships for the user, including the group info
+    const memberships = await GroupMember.findAll({
+      where: { userId },
+      include: [
+        {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name", "description"],
+        },
+      ],
+    })
 
-    const transformed = memberships.map((membership) => {
-      const { groupId, ...rest } = membership;
-      return { ...rest, group: groupId };
-    });
-
-    //return
     res.status(200).json({
       success: true,
-      data: transformed,
+      data: memberships?.map(m=>m?.toJSON()),
     });
   } catch (error) {
     next(error);
   }
 };
+
