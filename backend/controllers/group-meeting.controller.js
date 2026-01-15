@@ -311,7 +311,7 @@ export const getGroupMeetings = async (req, res, next) => {
   }
 };
 
-export const getGroupMeetingById = async (req, res, next) => {
+export const getGroupMeetingsById = async (req, res, next) => {
   try {
     const { meetingId } = req.params;
 
