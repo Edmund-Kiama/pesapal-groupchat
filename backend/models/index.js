@@ -88,7 +88,7 @@ Election.belongsTo(User, {
 
 // User ↔ Notification
 User.hasMany(Notification, { foreignKey: "userId" });
-Notification.belongsTo(User, { foreignKey: "userId" });
+Notification.belongsTo(User, { foreignKey: "userId" ,as: "user"});
 
 // User ↔ GroupMeeting created
 User.hasMany(GroupMeeting, { foreignKey: "created_by" });
@@ -149,7 +149,12 @@ GroupMeeting.belongsTo(Group, {
 // ELECTION RELATIONS
 // --------------------
 Election.hasMany(Position, { foreignKey: "electionId" });
-Position.belongsTo(Election, { foreignKey: "electionId" });
+Position.belongsTo(Election, {
+  foreignKey: "electionId",
+  as: "election",
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
 
 Election.hasMany(Candidate, { foreignKey: "electionId" });
 Candidate.belongsTo(Election, {
