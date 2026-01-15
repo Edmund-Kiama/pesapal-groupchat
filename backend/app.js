@@ -14,6 +14,7 @@ import groupInviteRouter from "./router/group-invite.route.js";
 import groupMeetingRouter from "./router/group-meeting.route.js";
 import notificationRouter from "./router/notification.route.js";
 import { connectDB } from "./database/connect-db.js";
+import { PORT } from "./config/env.js";
 
 const app = express();
 
@@ -47,7 +48,7 @@ async function startServer() {
   try {
     await connectDB();
 
-    app.listen(3000, () => {
+    app.listen((PORT || 3000), () => {
       console.log("🚀 Server running on port 3000");
     });
   } catch (error) {
