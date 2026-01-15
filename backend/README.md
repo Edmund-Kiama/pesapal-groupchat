@@ -4,157 +4,6 @@ This backend application manages groups, elections, voting, notifications, and c
 
 ---
 
-## Database Models and Relationships
-
-### 1. User
-- **Fields**: `id`, `name`, `email`, `password`, `role` (admin/member), `createdAt`, `updatedAt`
-- **Relationships**:
-  - Has many `VotingRight`s → tracks which elections/positions the user can vote in
-  - Has many `GroupMember`s → tracks membership in groups
-  - Has many `GroupInvite`s sent (`senderId`) and received (`receiverId`)
-  - Has many `GroupMeeting`s created (`created_by`)
-  - Has many `Candidate`s nominated (`userId`) and nominations made (`nominated_by`)
-  - Has many `Notification`s
-
----
-
-### 2. VotingRight
-- **Fields**: `id`, `userId`, `electionId`, `positionId`, `has_voted`, `createdAt`, `updatedAt`
-- **Relationships**:
-  - Belongs to `User`
-  - Belongs to `Election`
-  - Belongs to `Position`
-
----
-
-### 3. Election
-- **Fields**: `id`, `date_from`, `date_to`, `groupId`, `created_by`, `createdAt`, `updatedAt`
-- **Relationships**:
-  - Belongs to `Group`
-  - Belongs to `User` (`created_by`)
-  - Has many `Position`s
-  - Has many `Candidate`s
-  - Has many `Vote`s
-  - Has many `VotingRight`s
-
----
-
-### 4. Position
-- **Fields**: `id`, `position`, `electionId`, `created_by`, `createdAt`, `updatedAt`
-- **Relationships**:
-  - Belongs to `Election`
-  - Belongs to `User` (`created_by`)
-  - Has many `Candidate`s
-  - Has many `VotingRight`s
-
----
-
-### 5. Candidate
-- **Fields**: `id`, `userId`, `positionId`, `electionId`, `nominated_by`, `createdAt`, `updatedAt`
-- **Relationships**:
-  - Belongs to `User` (`userId`)
-  - Belongs to `Position`
-  - Belongs to `Election`
-  - Belongs to `User` (`nominated_by`)
-  - Has many `Vote`s
-
----
-
-### 6. Vote
-- **Fields**: `id`, `electionId`, `candidateId`, `positionId`, `createdAt`, `updatedAt`
-- **Relationships**:
-  - Belongs to `Election`
-  - Belongs to `Candidate`
-  - Belongs to `Position`
-
----
-
-### 7. Group
-- **Fields**: `id`, `name`, `description`, `created_by`, `createdAt`, `updatedAt`
-- **Relationships**:
-  - Belongs to `User` (`created_by`)
-  - Has many `GroupMember`s
-  - Has many `GroupInvite`s
-  - Has many `GroupChat`s
-  - Has many `GroupMeeting`s
-  - Has many `Election`s
-
----
-
-### 8. GroupMember
-- **Fields**: `id`, `userId`, `groupId`, `joined_at`, `createdAt`, `updatedAt`
-- **Relationships**:
-  - Belongs to `User`
-  - Belongs to `Group`
-
----
-
-### 9. GroupInvite
-- **Fields**: `id`, `senderId`, `receiverId`, `groupId`, `status`, `createdAt`, `updatedAt`
-- **Relationships**:
-  - Belongs to `User` (`senderId`)
-  - Belongs to `User` (`receiverId`)
-  - Belongs to `Group`
-
----
-
-### 10. GroupChat
-- **Fields**: `id`, `content`, `senderId`, `groupId`, `createdAt`, `updatedAt`
-- **Relationships**:
-  - Belongs to `User` (`senderId`)
-  - Belongs to `Group`
-
----
-
-### 11. GroupMeeting
-- **Fields**: `id`, `location`, `created_by`, `groupId`, `time_from`, `time_to`, `createdAt`, `updatedAt`
-- **Relationships**:
-  - Belongs to `User` (`created_by`)
-  - Belongs to `Group`
-  - Many-to-many relation with `User` through `invited` array (converted to `GroupMeetingInvite` junction table in PostgreSQL)
-
----
-
-### 12. Notification
-- **Fields**: `id`, `userId`, `type`, `message`, `metadata` (foreign keys to `Group`, `GroupMeeting`, `GroupInvite`, `Position`, `Election`), `isRead`, `createdAt`, `updatedAt`
-- **Relationships**:
-  - Belongs to `User`
-  - References other models optionally through `metadata`
-
----
-
-## Relationships Diagram (Simplified)
-
-User ──< VotingRight >── Election
-User ──< GroupMember >── Group
-User ──< GroupInvite >── User
-User ──< Candidate >── Position
-User ──< Vote >── Candidate
-User ──< GroupChat >── Group
-User ──< GroupMeeting >── Group
-User ──< Notification >
-
-Election ──< Position >── Candidate
-Election ──< Vote >
-Election ──< VotingRight >
-
-Group ──< GroupMember >
-Group ──< GroupInvite >
-Group ──< GroupChat >
-Group ──< GroupMeeting >
-Group ──< Election >
-
-
-
----
-
-## Notes
-- All `_id` fields in MongoDB are converted to `id` (auto-increment integer or UUID depending on setup) in PostgreSQL.
-- Many-to-many arrays (like `invited` in `GroupMeeting` or `voting_rights` in `User`) are represented as separate tables in PostgreSQL (`VotingRight`, `GroupMeetingInvite`).
-- All date fields are mapped to `DATE` or `TIMESTAMP` in PostgreSQL.
-- Sequelize manages `createdAt` and `updatedAt` automatically.
-
----
 
 ## Usage
 
@@ -169,9 +18,6 @@ DATABASE_URL=postgresql://username:password@host:port/dbname
 ```
 node app.jsv
 ```
-
-
-///////////////////////////////
 
 
 # Database Schema: Voting & Group Management System
@@ -303,19 +149,99 @@ This document outlines the database models and their architectural relationships
 
 ---
 
-## Relationships Summary
+# Database Relationships
 
-### User Associations
-* **One-to-Many**: `VotingRight`, `GroupMember`, `GroupChat`, `Candidate`, `Election` (creator), `GroupMeeting` (creator), `Notification`.
-* **Many-to-Many via Aliases**: `GroupInvite` (as sender or receiver).
+This document outlines the relational structure of the application database. The system is built using **Sequelize ORM**, utilizing `one-to-many` and `many-to-many` patterns to manage users, groups, elections, and meetings.
 
-### Group Associations
-* **One-to-Many**: `GroupMember`, `GroupInvite`, `GroupChat`, `GroupMeeting`, `Election`.
+---
 
-### Election Associations
-* **One-to-Many**: `Position`, `Candidate`, `VotingRight`, `Vote`.
-* **BelongsTo**: `Group`, `User` (creator).
+## Relationships Diagram (Simplified)
 
-### Position Associations
-* **One-to-Many**: `Candidate`, `VotingRight`.
-* **BelongsTo**: `Election`, `User` (creator).
+User ──< VotingRight >── Election
+User ──< GroupMember >── Group
+User ──< GroupInvite >── User
+User ──< Candidate >── Position
+User ──< Vote >── Candidate
+User ──< GroupChat >── Group
+User ──< GroupMeeting >── Group
+User ──< Notification >
+
+Election ──< Position >── Candidate
+Election ──< Vote >
+Election ──< VotingRight >
+
+Group ──< GroupMember >
+Group ──< GroupInvite >
+Group ──< GroupChat >
+Group ──< GroupMeeting >
+Group ──< Election >
+
+
+
+---
+
+
+## 1. User Associations
+The `User` model is the primary actor. It interacts with almost every other entity as either a creator, a participant, or a recipient.
+
+| Entity | Relationship | Foreign Key | Logic / Alias |
+| :--- | :--- | :--- | :--- |
+| **VotingRight** | One-to-Many | `userId` | Permissions granted to a user. |
+| **Candidate** | One-to-Many | `userId` | A user's own profile as a candidate. |
+| **Candidate** | One-to-Many | `nominated_by` | Tracks who nominated the candidate (`nominations`). |
+| **Group** | One-to-Many | `created_by` | Groups owned by the user (`groupsCreated`). |
+| **GroupMember** | One-to-Many | `userId` | User's group memberships (`memberships`). |
+| **GroupInvite** | One-to-Many | `senderId` | Invites sent by the user (`sentInvites`). |
+| **GroupInvite** | One-to-Many | `receiverId` | Invites received by the user (`receivedInvites`). |
+| **GroupChat** | One-to-Many | `senderId` | User as the message author (`sender`). |
+| **Vote** | One-to-Many | `userId` | Votes cast by the user. |
+| **Position** | One-to-Many | `created_by` | Positions defined by the user. |
+| **Election** | One-to-Many | `created_by` | Elections organized by the user. |
+| **Notification** | One-to-Many | `userId` | Notifications sent to the user. |
+| **GroupMeeting** | One-to-Many | `created_by` | Meetings scheduled by the user. |
+| **MeetingInvite**| One-to-Many | `userId` | Meetings the user is invited to. |
+
+---
+
+## 2. Group & Communication
+Groups act as containers for members, communication, and organizational events.
+
+* **Members & Invites**: A `Group` manages its population via `GroupMember` and `GroupInvite`.
+* **Communication**: `GroupChat` messages are linked to a specific `Group`.
+* **Events**: Both `Election` and `GroupMeeting` belong to a `Group`.
+* **Integrity**: Deleting a `Group` triggers a **CASCADE** delete for its members, invites, chats, elections, and meetings.
+
+---
+
+## 3. Election & Voting System
+The voting logic is tiered: **Election > Position > Candidate > Vote**.
+
+
+
+### Hierarchy:
+1.  **Election**: The top-level event. Belongs to a `Group` and a `User` (creator).
+2.  **Position**: Specific roles within an election (e.g., "President"). Belongs to an `Election`.
+3.  **Candidate**: Users running for a `Position` within an `Election`.
+4.  **Vote**: The final record. Linked to the `User` (voter), `Election`, `Position`, and `Candidate`.
+
+---
+
+## 4. Meetings & Invites
+Meetings are organized within groups and involve specific user invitations.
+
+* **GroupMeeting**: Created by a `User` for a `Group`.
+* **GroupMeetingInvite**: Links a `User` to a `GroupMeeting`.
+    * **Alias**: Accessed via `meeting.invited` in the `GroupMeeting` model.
+    * **Integrity**: If a meeting is deleted, all associated invites are **CASCADED**.
+
+---
+
+## 5. Data Integrity Rules
+
+| Rule | Applied To | Result |
+| :--- | :--- | :--- |
+| **CASCADE** | Most Associations | When a parent (Group, Election, Meeting) is deleted, all related child records are automatically removed to prevent orphaned data. |
+| **SET NULL** | Creator Fields | If a `User` is deleted, their `Groups`, `Elections`, and `Meetings` remain in the system, but the `created_by` field is set to `null` for historical record keeping. |
+
+---
+
