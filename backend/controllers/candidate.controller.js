@@ -127,7 +127,7 @@ export const getCandidates = async (req, res, next) => {
         },
         {
           model: User,
-          as: "nominated_by",
+          as: "nominator",
           attributes: ["id", "name"],
         },
       ],
@@ -166,7 +166,7 @@ export const getCandidateById = async (req, res, next) => {
         },
         {
           model: User,
-          as: "nominated_by",
+          as: "nominator",
           attributes: ["id", "name"],
         },
       ],

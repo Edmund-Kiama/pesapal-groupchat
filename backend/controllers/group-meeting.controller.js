@@ -177,7 +177,7 @@ export const groupMeetingResponse = async (req, res, next) => {
           include: [
             {
               model: User,
-              as: "created_by",
+              as: "creator",
               attributes: ["id", "name", "email"],
             },
           ],
@@ -285,7 +285,7 @@ export const getGroupMeetings = async (req, res, next) => {
         },
         {
           model: User,
-          as: "created_by",
+          as: "creator",
           attributes: ["id", "name"],
         },
         {
@@ -325,7 +325,7 @@ export const getGroupMeetingsById = async (req, res, next) => {
         },
         {
           model: User,
-          as: "created_by",
+          as: "creator",
           attributes: ["id", "name"],
         },
         {
@@ -368,7 +368,7 @@ export const getGroupMeetingsByGroupId = async (req, res, next) => {
       include: [
         {
           model: User,
-          as: "created_by",
+          as: "creator",
           attributes: ["id", "name"],
         },
         {

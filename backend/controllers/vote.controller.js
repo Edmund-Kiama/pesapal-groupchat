@@ -93,7 +93,7 @@ export const getVotesByCandidate = async (req, res, next) => {
             },
             {
               model: User,
-              as: "nominated_by",
+              as: "nominator",
               attributes: ["id", "name"],
             },
           ],
@@ -145,7 +145,14 @@ export const getVotesByElection = async (req, res, next) => {
         [Sequelize.fn("COUNT", Sequelize.col("id")), "total_votes"],
       ],
       where: { electionId },
-      group: ["candidateId", "positionId", "candidate.id", "candidate->nominated.id", "candidate->nominated_by.id", "position.id"],
+      group: [
+        "candidateId",
+        "positionId",
+        "candidate.id",
+        "candidate->nominated.id",
+        "candidate->nominated_by.id",
+        "position.id",
+      ],
       include: [
         {
           model: Candidate,
@@ -153,7 +160,7 @@ export const getVotesByElection = async (req, res, next) => {
           attributes: ["id"],
           include: [
             { model: User, as: "nominated", attributes: ["id", "name"] },
-            { model: User, as: "nominated_by", attributes: ["id", "name"] },
+            { model: User, as: "nominator", attributes: ["id", "name"] },
           ],
         },
         {

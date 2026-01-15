@@ -89,7 +89,7 @@ export const getElections = async (req, res, next) => {
           as: "group",
           attributes: ["id", "name", "description"],
         }, // populate group
-        { model: User, as: "created_by", attributes: ["id", "name"] }, // populate creator
+        { model: User, as: "creator", attributes: ["id", "name"] }, // populate creator
       ],
     });
 
@@ -114,7 +114,7 @@ export const getElectionById = async (req, res, next) => {
           as: "group",
           attributes: ["id", "name", "description"],
         }, // populate group
-        { model: User, as: "created_by", attributes: ["id", "name"] }, // populate creator
+        { model: User, as: "creator", attributes: ["id", "name"] }, // populate creator
       ],
     });
 
@@ -142,7 +142,7 @@ export const getElectionPositions = async (req, res, next) => {
     // Fetch all positions for this election with the creator (User)
     const positions = await Position.findAll({
       where: { electionId },
-      include: [{ model: User, as: "created_by", attributes: ["id", "name"] }],
+      include: [{ model: User, as: "creator", attributes: ["id", "name"] }],
     });
 
     res.status(200).json({

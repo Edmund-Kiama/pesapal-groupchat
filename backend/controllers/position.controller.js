@@ -169,7 +169,7 @@ export const getPositionCandidates = async (req, res, next) => {
         },
         {
           model: User,
-          as: "nominated_by",
+          as: "nominator",
           attributes: ["id", "name"],
         },
       ],

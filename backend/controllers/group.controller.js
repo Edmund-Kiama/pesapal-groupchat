@@ -206,7 +206,7 @@ export const getGroups = async (req, res, next) => {
       include: [
         {
           model: User,
-          as: "created_by",
+          as: "creator",
           attributes: ["id", "name"],
         },
       ],
@@ -266,7 +266,7 @@ export const getGroupById = async (req, res, next) => {
       include: [
         {
           model: User,
-          as: "created_by", 
+          as: "creator",
           attributes: ["name"],
         },
       ],

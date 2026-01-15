@@ -27,7 +27,7 @@ Candidate.belongsTo(User, {
 User.hasMany(Candidate, { foreignKey: "nominated_by", as: "nominations" });
 Candidate.belongsTo(User, {
   foreignKey: "nominated_by",
-  as: "nominated_by",
+  as: "nominator",
 
   onDelete: "SET NULL",
   onUpdate: "CASCADE",
@@ -36,8 +36,8 @@ Candidate.belongsTo(User, {
 User.hasMany(Group, { foreignKey: "created_by", as: "groupsCreated" });
 Group.belongsTo(User, {
   foreignKey: "created_by",
-  as: "created_by",
-  onDelete: "SET NULL", 
+  as: "creator",
+  onDelete: "SET NULL",
   onUpdate: "CASCADE",
 });
 
@@ -75,26 +75,26 @@ Vote.belongsTo(User, { foreignKey: "userId" });
 
 // User ↔ Position created
 User.hasMany(Position, { foreignKey: "created_by" });
-Position.belongsTo(User, { foreignKey: "created_by", as: "created_by" });
+Position.belongsTo(User, { foreignKey: "created_by", as: "creator" });
 
 // User ↔ Election created
 User.hasMany(Election, { foreignKey: "created_by" });
 Election.belongsTo(User, {
   foreignKey: "created_by",
-  as: "created_by",
+  as: "creator",
   onDelete: "SET NULL",
   onUpdate: "CASCADE",
 });
 
 // User ↔ Notification
 User.hasMany(Notification, { foreignKey: "userId" });
-Notification.belongsTo(User, { foreignKey: "userId" ,as: "user"});
+Notification.belongsTo(User, { foreignKey: "userId", as: "user" });
 
 // User ↔ GroupMeeting created
 User.hasMany(GroupMeeting, { foreignKey: "created_by" });
 GroupMeeting.belongsTo(User, {
   foreignKey: "created_by",
-  as: "created_by",
+  as: "creator",
   onDelete: "SET NULL",
   onUpdate: "CASCADE",
 });
