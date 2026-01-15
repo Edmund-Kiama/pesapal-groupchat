@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-  "start": "npx sequelize-cli db:migrate --config backend/config/config.js && node app.js",
+    "start": "npx sequelize-cli db:migrate && node app.js",
     "dev": "nodemon app.js"
   },
   "dependencies": {
