@@ -32,19 +32,18 @@ export const sendChat = async (req, res, next) => {
 
     await transaction.commit();
 
-    // await Notification.create({
-    //   userId: senderId,
-    //   type: "GROUP_CHAT",
-    //   message: content,
-    //   groupId,
-    // }),
-
-    // Return response
-    res.status(201).json({
-      success: true,
-      message: "Chat created successfully",
-      data: chat?.toJSON(),
-    });
+    await Notification.create({
+      userId: senderId,
+      type: "GROUP_CHAT",
+      message: content,
+      groupId,
+    }),
+      // Return response
+      res.status(201).json({
+        success: true,
+        message: "Chat created successfully",
+        data: chat?.toJSON(),
+      });
   } catch (error) {
     await transaction.rollback();
     console.error(error);
