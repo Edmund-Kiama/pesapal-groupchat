@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import { DataTypes, Model } from "sequelize";
 import { sequelize } from "../database/db.js";
 

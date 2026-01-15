@@ -1,35 +1,43 @@
+import {
+  ValidationError,
+  UniqueConstraintError,
+  ForeignKeyConstraintError,
+} from "sequelize";
+
 const errorMiddleware = (err, req, res, next) => {
   try {
-    let error = { ...err };
-    console.error("Error >>", error);
+    console.error("Error >>", err);
 
-    //likely errors to face (Mongoose)
-    //--> Bad/Non-existing ObjectId
-    if (err.name === "CastError") {
-      const message = "Resource not found";
-      error = new Error(message);
-      error.statusCode = 404;
+    let statusCode = 500;
+    let message = err.message || "Server Error";
+
+    // Sequelize validation errors
+    if (err instanceof ValidationError) {
+      statusCode = 400;
+      message = err.errors.map((e) => e.message).join(", ");
     }
 
-    // --> Duplicate Key
-    if (err.code === 11000) {
-      const message = "Duplicate field value entered";
-      error = new Error(message);
-      error.statusCode = 400;
+    // Sequelize unique constraint errors
+    else if (err instanceof UniqueConstraintError) {
+      statusCode = 400;
+      message = err.errors.map((e) => e.message).join(", ");
     }
 
-    // --> Validation Error
-    if (err.message === "ValidationError") {
-      const message = Object.values(err.errors).map((val) => val.message);
-      error = new Error(message.join(", "));
-      error.statusCode = 400;
+    // Sequelize foreign key constraint errors
+    else if (err instanceof ForeignKeyConstraintError) {
+      statusCode = 400;
+      message = `Invalid reference: ${err.index || ""}`;
     }
 
-    res.status(error.statusCode || 500).json({
+    // Not found error (can throw manually in controllers)
+    else if (err.statusCode === 404) {
+      statusCode = 404;
+    }
+
+    res.status(statusCode).json({
       success: false,
-      error: error.message || "Server Error",
+      error: message,
     });
-    
   } catch (error) {
     next(error);
   }
