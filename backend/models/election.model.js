@@ -40,11 +40,4 @@ Election.init(
   }
 );
 
-// Associations
-Group.hasMany(Election, { foreignKey: "groupId" });
-Election.belongsTo(Group, { foreignKey: "groupId" });
-
-User.hasMany(Election, { foreignKey: "created_by", as: "CreatedElections" });
-Election.belongsTo(User, { foreignKey: "created_by", as: "Creator" });
-
 export default Election;

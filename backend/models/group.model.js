@@ -37,8 +37,4 @@ Group.init(
   }
 );
 
-// Associations
-Group.belongsTo(User, { foreignKey: "created_by" });
-User.hasMany(Group, { foreignKey: "created_by" });
-
 export default Group;

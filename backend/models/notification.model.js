@@ -98,23 +98,4 @@ Notification.init(
   }
 );
 
-// Associations
-User.hasMany(Notification, { foreignKey: "userId" });
-Notification.belongsTo(User, { foreignKey: "userId" });
-
-Group.hasMany(Notification, { foreignKey: "groupId" });
-Notification.belongsTo(Group, { foreignKey: "groupId" });
-
-GroupMeeting.hasMany(Notification, { foreignKey: "meetingId" });
-Notification.belongsTo(GroupMeeting, { foreignKey: "meetingId" });
-
-GroupInvite.hasMany(Notification, { foreignKey: "inviteId" });
-Notification.belongsTo(GroupInvite, { foreignKey: "inviteId" });
-
-Position.hasMany(Notification, { foreignKey: "positionId" });
-Notification.belongsTo(Position, { foreignKey: "positionId" });
-
-Election.hasMany(Notification, { foreignKey: "electionId" });
-Notification.belongsTo(Election, { foreignKey: "electionId" });
-
 export default Notification;

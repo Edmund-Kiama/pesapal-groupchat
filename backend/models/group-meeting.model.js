@@ -44,11 +44,4 @@ GroupMeeting.init(
   }
 );
 
-// Associations
-User.hasMany(GroupMeeting, { foreignKey: "created_by" });
-GroupMeeting.belongsTo(User, { foreignKey: "created_by" });
-
-Group.hasMany(GroupMeeting, { foreignKey: "groupId" });
-GroupMeeting.belongsTo(Group, { foreignKey: "groupId" });
-
 export default GroupMeeting;

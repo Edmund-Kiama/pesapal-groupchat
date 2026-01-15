@@ -50,17 +50,5 @@ Candidate.init(
   }
 );
 
-// Associations
-User.hasOne(Candidate, { foreignKey: "userId" });
-Candidate.belongsTo(User, { foreignKey: "userId" });
-
-Position.hasMany(Candidate, { foreignKey: "positionId" });
-Candidate.belongsTo(Position, { foreignKey: "positionId" });
-
-Election.hasMany(Candidate, { foreignKey: "electionId" });
-Candidate.belongsTo(Election, { foreignKey: "electionId" });
-
-User.hasMany(Candidate, { foreignKey: "nominated_by", as: "Nominations" });
-Candidate.belongsTo(User, { foreignKey: "nominated_by", as: "Nominator" });
 
 export default Candidate;

@@ -39,11 +39,4 @@ Position.init(
   }
 );
 
-// Associations
-Position.belongsTo(Election, { foreignKey: "electionId" });
-Election.hasMany(Position, { foreignKey: "electionId" });
-
-Position.belongsTo(User, { foreignKey: "created_by" });
-User.hasMany(Position, { foreignKey: "created_by" });
-
 export default Position;

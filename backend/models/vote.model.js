@@ -41,14 +41,5 @@ Vote.init(
   }
 );
 
-// Associations
-Vote.belongsTo(Election, { foreignKey: "electionId" });
-Election.hasMany(Vote, { foreignKey: "electionId" });
-
-Vote.belongsTo(Candidate, { foreignKey: "candidateId" });
-Candidate.hasMany(Vote, { foreignKey: "candidateId" });
-
-Vote.belongsTo(Position, { foreignKey: "positionId" });
-Position.hasMany(Vote, { foreignKey: "positionId" });
 
 export default Vote;

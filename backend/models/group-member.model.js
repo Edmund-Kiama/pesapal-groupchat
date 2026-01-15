@@ -37,11 +37,4 @@ GroupMember.init(
   }
 );
 
-// Associations
-User.hasMany(GroupMember, { foreignKey: "userId" });
-GroupMember.belongsTo(User, { foreignKey: "userId" });
-
-Group.hasMany(GroupMember, { foreignKey: "groupId" });
-GroupMember.belongsTo(Group, { foreignKey: "groupId" });
-
 export default GroupMember;

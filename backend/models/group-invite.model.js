@@ -45,13 +45,4 @@ GroupInvite.init(
   }
 );
 
-// Associations
-User.hasMany(GroupInvite, { foreignKey: "senderId", as: "SentInvites" });
-User.hasMany(GroupInvite, { foreignKey: "receiverId", as: "ReceivedInvites" });
-GroupInvite.belongsTo(User, { foreignKey: "senderId", as: "Sender" });
-GroupInvite.belongsTo(User, { foreignKey: "receiverId", as: "Receiver" });
-
-Group.hasMany(GroupInvite, { foreignKey: "groupId" });
-GroupInvite.belongsTo(Group, { foreignKey: "groupId" });
-
 export default GroupInvite;

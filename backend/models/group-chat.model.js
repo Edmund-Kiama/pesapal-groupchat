@@ -40,11 +40,4 @@ GroupChat.init(
   }
 );
 
-// Associations
-User.hasMany(GroupChat, { foreignKey: "senderId", as: "SentMessages" });
-GroupChat.belongsTo(User, { foreignKey: "senderId", as: "Sender" });
-
-Group.hasMany(GroupChat, { foreignKey: "groupId" });
-GroupChat.belongsTo(Group, { foreignKey: "groupId" });
-
 export default GroupChat;

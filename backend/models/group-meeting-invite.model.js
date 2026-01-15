@@ -37,11 +37,4 @@ GroupMeetingInvite.init(
   }
 );
 
-// Associations
-User.hasMany(GroupMeetingInvite, { foreignKey: "userId" });
-GroupMeetingInvite.belongsTo(User, { foreignKey: "userId" });
-
-GroupMeeting.hasMany(GroupMeetingInvite, { foreignKey: "meetingId" });
-GroupMeetingInvite.belongsTo(GroupMeeting, { foreignKey: "meetingId" });
-
 export default  GroupMeetingInvite

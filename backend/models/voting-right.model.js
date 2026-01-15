@@ -46,8 +46,4 @@ VotingRight.init(
   }
 );
 
-// Associations
-User.hasMany(VotingRight, { foreignKey: "userId" });
-VotingRight.belongsTo(User, { foreignKey: "userId" });
-
 export default VotingRight;
