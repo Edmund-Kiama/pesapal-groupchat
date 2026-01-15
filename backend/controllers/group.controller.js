@@ -199,6 +199,30 @@ export const addMember = async (req, res, next) => {
   }
 };
 
+export const getGroups = async (req, res, next) => {
+  try {
+    // Fetch all groups
+    const groups = await Group.findAll({
+      include: [
+        {
+          model: User,
+          as: "created_by",
+          attributes: ["id", "name"],
+        },
+      ],
+    });
+
+    // Return all records
+    res.status(200).json({
+      success: true,
+      data: groups.map((g) => g.toJSON()),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 export const getMemberships = async (req, res, next) => {
   try {
     // get all group members with associated user and group
