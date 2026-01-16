@@ -21,6 +21,7 @@ export const nominateCandidate = async (req, res, next) => {
     if (!positionId) missingFields.push("positionId");
 
     if (missingFields.length > 0) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Missing required field(s): ${missingFields.join(", ")}`,
@@ -31,6 +32,7 @@ export const nominateCandidate = async (req, res, next) => {
     const nominee = await User.findByPk(userId, { transaction });
 
     if (!position || !nominee) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: "Invalid payload",
@@ -49,7 +51,13 @@ export const nominateCandidate = async (req, res, next) => {
 
     await transaction.commit();
 
-    await Promise.all([
+    res.status(201).json({
+      success: true,
+      message: "Candidate created successfully",
+      data: candidate?.toJSON(),
+    });
+
+    Promise.all([
       // notify admin
       Notification.create({
         userId: admin.id,
@@ -91,16 +99,12 @@ export const nominateCandidate = async (req, res, next) => {
           </p>
         `,
       }),
-    ]);
-
-    res.status(201).json({
-      success: true,
-      message: "Candidate created successfully",
-      data: candidate?.toJSON(),
-    });
+    ]).catch((err) =>
+      console.error("NominateCandidate side effects failed:", err)
+    );
   } catch (error) {
     await transaction.rollback();
-    console.error(error);
+    console.error("NominateCandidate Error:", error);
     next(error);
   }
 };

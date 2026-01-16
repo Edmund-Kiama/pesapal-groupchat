@@ -71,7 +71,7 @@ export const signUp = async (req, res, next) => {
     });
 
     // Side effects (non-transactional)
-    await Promise.all([
+    Promise.all([
       Notification.create({
         userId: user.id,
         type: "USER_CREATION",
@@ -89,7 +89,7 @@ export const signUp = async (req, res, next) => {
           <p>Happy to have you onboard!!</p>
         `,
       }),
-    ]);
+    ]).catch((err) => console.error("Post-signup side effects failed:", err));
   } catch (error) {
     await transaction.rollback();
     console.error("SignUp Error:", error);

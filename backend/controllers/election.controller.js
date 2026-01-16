@@ -22,6 +22,7 @@ export const createElection = async (req, res, next) => {
     if (!groupId) missingFields.push("groupId");
 
     if (missingFields.length > 0) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Missing required field(s): ${missingFields.join(", ")}`,
@@ -41,7 +42,13 @@ export const createElection = async (req, res, next) => {
 
     await transaction.commit();
 
-    await Promise.all([
+    res.status(201).json({
+      success: true,
+      message: "Election created successfully",
+      data: election?.toJSON(),
+    });
+
+    Promise.all([
       Notification.create({
         userId: admin.id,
         type: "ELECTION_CREATED",
@@ -65,15 +72,12 @@ export const createElection = async (req, res, next) => {
           </p>
         `,
       }),
-    ]);
-
-    res.status(201).json({
-      success: true,
-      message: "Election created successfully",
-      data: election?.toJSON(),
-    });
+    ]).catch((err) =>
+      console.error("CreateElection side effects failed:", err)
+    );
   } catch (error) {
     await transaction.rollback();
+    console.error("CreateElection Error:", error);
     next(error);
   }
 };
@@ -165,6 +169,7 @@ export const endElection = async (req, res, next) => {
     // Find the election first
     const election = await Election.findByPk(electionId);
     if (!election) {
+      await transaction.rollback();
       return res.status(404).json({
         success: false,
         message: "Election was not found",
@@ -178,8 +183,13 @@ export const endElection = async (req, res, next) => {
     await election.destroy({ transaction });
     await transaction.commit();
 
+    res.status(200).json({
+      success: true,
+      message: "Election was deleted successfully",
+    });
+
     // Notify admin and send email
-    await Promise.all([
+    Promise.all([
       Notification.create({
         userId: admin?.id,
         type: "ELECTION_DELETED",
@@ -202,14 +212,10 @@ export const endElection = async (req, res, next) => {
           )} to ${formatDateTime(date_to)}</p>
         `,
       }),
-    ]);
-
-    res.status(200).json({
-      success: true,
-      message: "Election was deleted successfully",
-    });
+    ]).catch((err) => console.error("EndElection side effects failed:", err));
   } catch (error) {
     await transaction.rollback();
+    console.error("EndElection Error:", error);
     next(error);
   }
 };

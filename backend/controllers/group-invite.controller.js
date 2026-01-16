@@ -20,6 +20,7 @@ export const createGroupInvite = async (req, res, next) => {
     if (!groupId) missingFields.push("groupId");
 
     if (missingFields.length > 0) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Missing required field(s): ${missingFields.join(", ")}`,
@@ -31,6 +32,7 @@ export const createGroupInvite = async (req, res, next) => {
     const group = await Group.findByPk(groupId);
 
     if (!user || !group) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: "Invalid payload",
@@ -48,8 +50,15 @@ export const createGroupInvite = async (req, res, next) => {
     );
     await transaction.commit();
 
+    // return
+    res.status(201).json({
+      success: true,
+      message: "Group Invite created successfully",
+      data: groupInvite?.toJSON(),
+    });
+
     // notifications and email
-    await Promise.all([
+    Promise.all([
       Notification.create({
         userId: receiverId,
         type: "GROUP_INVITE_CREATED",
@@ -68,17 +77,12 @@ export const createGroupInvite = async (req, res, next) => {
           <p>Please login for more details.</p>
         `,
       }),
-    ]);
-
-    // return
-    res.status(201).json({
-      success: true,
-      message: "Group Invite created successfully",
-      data: groupInvite?.toJSON(),
-    });
+    ]).catch((err) =>
+      console.error("CreateGroupInvite side effects failed:", err)
+    );
   } catch (error) {
     await transaction.rollback();
-    console.error(error);
+    console.error("CreateGroupInvite Error:", error);
     next(error);
   }
 };
@@ -96,6 +100,7 @@ export const groupInviteResponse = async (req, res, next) => {
     if (!status) missingFields.push("status");
 
     if (missingFields.length > 0) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Missing required field(s): ${missingFields.join(", ")}`,
@@ -105,6 +110,7 @@ export const groupInviteResponse = async (req, res, next) => {
     // validate status
     const allowedStatuses = ["accepted", "declined"];
     if (!allowedStatuses.includes(status)) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Invalid status. Allowed: ${allowedStatuses.join(", ")}`,
@@ -121,6 +127,7 @@ export const groupInviteResponse = async (req, res, next) => {
     });
 
     if (!updatedInvite) {
+      await transaction.rollback();
       return res.status(404).json({
         success: false,
         message: "Invite not found or already responded",
@@ -141,6 +148,7 @@ export const groupInviteResponse = async (req, res, next) => {
       });
 
       if (existingMember) {
+        await transaction.rollback();
         return res.status(409).json({
           success: false,
           message: "Member is already in the Group",
@@ -158,6 +166,12 @@ export const groupInviteResponse = async (req, res, next) => {
     }
 
     await transaction.commit();
+
+    res.status(200).json({
+      success: true,
+      message: "Group Invite updated successfully",
+      data: updatedInvite?.toJSON(),
+    });
 
     // notifications
     const notifications = [
@@ -203,16 +217,12 @@ export const groupInviteResponse = async (req, res, next) => {
       }),
     ];
 
-    await Promise.all([...notifications, ...emails]);
-
-    res.status(200).json({
-      success: true,
-      message: "Group Invite updated successfully",
-      data: updatedInvite?.toJSON(),
-    });
+    Promise.all([...notifications, ...emails]).catch((err) =>
+      console.error("GroupInviteResponse side effects failed:", err)
+    );
   } catch (error) {
     await transaction.rollback();
-    console.error(error);
+    console.error("GroupInviteResponse Error:", error);
     next(error);
   }
 };

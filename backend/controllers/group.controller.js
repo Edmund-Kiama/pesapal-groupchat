@@ -13,6 +13,7 @@ export const createGroup = async (req, res, next) => {
     if (!description) missingFields.push("description");
 
     if (missingFields.length > 0) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Missing required field(s): ${missingFields.join(", ")}`,
@@ -24,7 +25,7 @@ export const createGroup = async (req, res, next) => {
       {
         name,
         description,
-        created_by: admin.id, 
+        created_by: admin.id,
       },
       { transaction }
     );
@@ -41,13 +42,19 @@ export const createGroup = async (req, res, next) => {
 
     await transaction.commit();
 
+    res.status(201).json({
+      success: true,
+      message: "Group created successfully",
+      data: group?.toJSON(),
+    });
+
     // create notifications and send email
-    await Promise.all([
+    Promise.all([
       Notification.create({
         userId: admin.id,
         type: "GROUP_CREATED",
         message: `You have created the group: "${group.name}"`,
-        groupId: group.id 
+        groupId: group.id,
       }),
       sendEmail({
         to: admin.email,
@@ -59,16 +66,12 @@ export const createGroup = async (req, res, next) => {
           <p>Please continue by adding members to this new group.</p>
         `,
       }),
-    ]);
-
-    res.status(201).json({
-      success: true,
-      message: "Group created successfully",
-      data: group?.toJSON(),
-    });
+    ]).catch((err) =>
+      console.error("Post-group-creation side effects failed:", err)
+    );
   } catch (error) {
     await transaction.rollback();
-    console.error(error);
+    console.error("CreateGroup Error:", error);
     next(error);
   }
 };
@@ -86,6 +89,7 @@ export const addMember = async (req, res, next) => {
     if (!groupId) missingFields.push("groupId");
 
     if (missingFields.length > 0) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Missing required field(s): ${missingFields.join(", ")}`,
@@ -95,6 +99,7 @@ export const addMember = async (req, res, next) => {
     // fetch group
     const group = await Group.findByPk(groupId);
     if (!group) {
+      await transaction.rollback();
       return res.status(404).json({
         success: false,
         message: "Group not found",
@@ -108,6 +113,7 @@ export const addMember = async (req, res, next) => {
     });
 
     if (validUsers.length === 0) {
+      await transaction.rollback();
       return res.status(404).json({
         success: false,
         message: "No valid users found",
@@ -131,6 +137,7 @@ export const addMember = async (req, res, next) => {
     const newUsers = validUsers.filter((u) => !existingUserIds.has(u.id));
 
     if (newUsers.length === 0) {
+      await transaction.rollback();
       return res.status(409).json({
         success: false,
         message: "All users are already members of this group",
@@ -148,6 +155,13 @@ export const addMember = async (req, res, next) => {
     );
 
     await transaction.commit();
+
+    res.status(200).json({
+      success: true,
+      message: "Members added successfully",
+      addedCount: newUsers.length,
+      skippedCount: existingUserIds.size,
+    });
 
     // notifications
     const notifications = [
@@ -169,10 +183,12 @@ export const addMember = async (req, res, next) => {
       })),
     ];
 
-    await Notification.bulkCreate(notifications);
+    Notification.bulkCreate(notifications).catch((err) =>
+      console.error("AddMember notification creation failed:", err)
+    );
 
     // emails (parallel)
-    await Promise.all(
+    Promise.all(
       newUsers.map((u) =>
         sendEmail({
           to: u.email,
@@ -185,16 +201,10 @@ export const addMember = async (req, res, next) => {
           `,
         })
       )
-    );
-
-    res.status(200).json({
-      success: true,
-      message: "Members added successfully",
-      addedCount: newUsers.length,
-      skippedCount: existingUserIds.size,
-    });
+    ).catch((err) => console.error("AddMember email sending failed:", err));
   } catch (error) {
     await transaction.rollback();
+    console.error("AddMember Error:", error);
     next(error);
   }
 };

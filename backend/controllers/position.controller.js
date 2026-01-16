@@ -20,6 +20,7 @@ export const createPosition = async (req, res, next) => {
     if (!position) missingFields.push("position");
 
     if (missingFields.length > 0) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Missing required field(s): ${missingFields.join(", ")}`,
@@ -38,21 +39,24 @@ export const createPosition = async (req, res, next) => {
 
     await transaction.commit();
 
-    // create notification
-    await Notification.create({
-      userId: adminId,
-      type: "POSITION_CREATED",
-      message: `A new position has been created: ${position}`,
-      positionId: positionCreated.id,
-    });
-
     res.status(201).json({
       success: true,
       message: "Position created successfully",
       data: positionCreated?.toJSON(),
     });
+
+    // create notification
+    Notification.create({
+      userId: adminId,
+      type: "POSITION_CREATED",
+      message: `A new position has been created: ${position}`,
+      positionId: positionCreated.id,
+    }).catch((err) =>
+      console.error("CreatePosition notification failed:", err)
+    );
   } catch (error) {
     await transaction.rollback();
+    console.error("CreatePosition Error:", error);
     next(error);
   }
 };
@@ -135,20 +139,24 @@ export const deletePosition = async (req, res, next) => {
     await position.destroy({ transaction });
 
     await transaction.commit();
-    // create notification
-    await Notification.create({
-      userId: user.id, // assuming req.user has id
-      type: "POSITION_DELETED",
-      message: `The position ${position.position} has been deleted by ${user.name}`,
-      positionId: position.id,
-    });
 
     res.status(200).json({
       success: true,
       message: "Position was deleted successfully",
     });
+
+    // create notification
+    Notification.create({
+      userId: user.id,
+      type: "POSITION_DELETED",
+      message: `The position ${position.position} has been deleted by ${user.name}`,
+      positionId: position.id,
+    }).catch((err) =>
+      console.error("DeletePosition notification failed:", err)
+    );
   } catch (error) {
     await transaction.rollback();
+    console.error("DeletePosition Error:", error);
     next(error);
   }
 };

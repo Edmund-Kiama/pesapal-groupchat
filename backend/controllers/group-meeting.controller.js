@@ -25,6 +25,7 @@ export const createGroupMeeting = async (req, res, next) => {
     if (!groupId) missingFields.push("groupId");
 
     if (missingFields.length > 0) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Missing required field(s): ${missingFields.join(", ")}`,
@@ -72,6 +73,12 @@ export const createGroupMeeting = async (req, res, next) => {
       )
     );
     await transaction.commit();
+
+    res.status(201).json({
+      success: true,
+      message: "Group Meeting created successfully",
+      data: groupMeeting?.toJSON(),
+    });
 
     // send notifications & emails
     const notifications = [
@@ -126,16 +133,12 @@ export const createGroupMeeting = async (req, res, next) => {
       ),
     ];
 
-    await Promise.all([...notifications, ...emails]);
-
-    res.status(201).json({
-      success: true,
-      message: "Group Meeting created successfully",
-      data: groupMeeting?.toJSON(),
-    });
+    Promise.all([...notifications, ...emails]).catch((err) =>
+      console.error("CreateGroupMeeting side effects failed:", err)
+    );
   } catch (error) {
     await transaction.rollback();
-    console.error(error);
+    console.error("CreateGroupMeeting Error:", error);
     next(error);
   }
 };
@@ -153,6 +156,7 @@ export const groupMeetingResponse = async (req, res, next) => {
     if (!status) missingFields.push("status");
 
     if (missingFields.length > 0) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Missing required field(s): ${missingFields.join(", ")}`,
@@ -162,6 +166,7 @@ export const groupMeetingResponse = async (req, res, next) => {
     // validate status
     const allowedStatuses = ["accepted", "declined"];
     if (!allowedStatuses.includes(status)) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Invalid status. Allowed: ${allowedStatuses.join(", ")}`,
@@ -186,6 +191,7 @@ export const groupMeetingResponse = async (req, res, next) => {
     });
 
     if (!invite) {
+      await transaction.rollback();
       return res.status(404).json({
         success: false,
         message: "Invite not found for this user",
@@ -207,8 +213,14 @@ export const groupMeetingResponse = async (req, res, next) => {
         ? "GROUP_MEETING_ACCEPTED"
         : "GROUP_MEETING_DECLINED";
 
+    res.status(200).json({
+      success: true,
+      message: "Group Meeting response was successful",
+      data: groupMeeting,
+    });
+
     // notifications & emails
-    await Promise.all([
+    Promise.all([
       // notify meeting creator
       Notification.create({
         userId: meetingCreator.id,
@@ -259,16 +271,12 @@ export const groupMeetingResponse = async (req, res, next) => {
           <p>Location: ${groupMeeting.location}</p>
         `,
       }),
-    ]);
-
-    res.status(200).json({
-      success: true,
-      message: "Group Meeting response was successful",
-      data: groupMeeting,
-    });
+    ]).catch((err) =>
+      console.error("GroupMeetingResponse side effects failed:", err)
+    );
   } catch (error) {
     await transaction.rollback();
-    console.error(error);
+    console.error("GroupMeetingResponse Error:", error);
     next(error);
   }
 };

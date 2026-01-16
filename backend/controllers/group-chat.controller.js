@@ -14,6 +14,7 @@ export const sendChat = async (req, res, next) => {
     if (!groupId) missingFields.push("groupId");
 
     if (missingFields.length > 0) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
         message: `Missing required field(s): ${missingFields.join(", ")}`,
@@ -32,21 +33,23 @@ export const sendChat = async (req, res, next) => {
 
     await transaction.commit();
 
-    await Notification.create({
+    res.status(201).json({
+      success: true,
+      message: "Chat created successfully",
+      data: chat?.toJSON(),
+    });
+
+    Notification.create({
       userId: senderId,
       type: "GROUP_CHAT",
       message: content,
       groupId,
-    }),
-      // Return response
-      res.status(201).json({
-        success: true,
-        message: "Chat created successfully",
-        data: chat?.toJSON(),
-      });
+    }).catch((err) =>
+      console.error("SendChat notification creation failed:", err)
+    );
   } catch (error) {
     await transaction.rollback();
-    console.error(error);
+    console.error("SendChat Error:", error);
     next(error);
   }
 };
