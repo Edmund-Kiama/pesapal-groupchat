@@ -1,10 +1,11 @@
 import Router from "express";
 import {
-    getNotifications,
-    getUserNotifications,
-    getNotificationsByGroupId,
-    getNotificationsByMeetingId,
-    getNotificationsByGroupInviteId,
+  getNotifications,
+  getUserNotifications,
+  markNotificationAsRead,
+  getNotificationsByGroupId,
+  getNotificationsByMeetingId,
+  getNotificationsByGroupInviteId,
 } from "../controllers/notification.controller.js";
 
 const notificationRouter = Router();
@@ -12,6 +13,7 @@ const notificationRouter = Router();
 // --> /api/v1/notification
 notificationRouter.get("/", getNotifications);
 notificationRouter.get("/user", getUserNotifications);
+notificationRouter.patch("/:notificationId/read", markNotificationAsRead);
 notificationRouter.get("/group/:groupId", getNotificationsByGroupId);
 notificationRouter.get("/meeting/:meetingId", getNotificationsByMeetingId);
 notificationRouter.get("/group-invite/:groupInviteId", getNotificationsByGroupInviteId);

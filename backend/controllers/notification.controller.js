@@ -23,6 +23,42 @@ export const getNotifications = async (req, res, next) => {
   }
 };
 
+export const markNotificationAsRead = async (req, res, next) => {
+  try {
+    const { notificationId } = req.params;
+    const userId = req.user?.id;
+
+    // Find the notification
+    const notification = await Notification.findByPk(notificationId);
+
+    if (!notification) {
+      return res.status(404).json({
+        success: false,
+        message: "Notification not found",
+      });
+    }
+
+    // Verify the notification belongs to the user
+    if (notification.userId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to update this notification",
+      });
+    }
+
+    // Update the notification
+    await notification.update({ isRead: true });
+
+    res.status(200).json({
+      success: true,
+      data: notification.toJSON(),
+      message: "Notification marked as read",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getUserNotifications = async (req, res, next) => {
   try {
     const userId = req.user.id;
