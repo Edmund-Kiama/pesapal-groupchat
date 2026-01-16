@@ -85,6 +85,9 @@ export interface Group {
   chats?: GroupChat[];
   elections?: Election[];
   meetings?: GroupMeeting[];
+
+  // Additional fields from API
+  memberCount?: number;
 }
 
 export interface GroupMember {

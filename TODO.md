@@ -1,33 +1,18 @@
-# User Session and Notification System Implementation
+# Groups Fixes - TODO List
 
 ## Backend Updates
-- [x] Add `updateNotificationReadStatus` controller function in notification.controller.js
-- [x] Add `PATCH /notification/:notificationId/read` route endpoint in notification.route.js
+- [x] Update `getMemberships` in `backend/controllers/group.controller.js` to include member count and creator ID
+- [x] Add `deleteGroup` endpoint in `backend/controllers/group.controller.js`
+- [x] Add delete route in `backend/router/group.route.js`
 
-## Frontend - Zustand Store
-- [x] Create `active-user-store.ts` for managing active user selection
+## Frontend Updates
+- [x] Update `frontend/src/components/groups/group-list.tsx` - pass creatorId and memberCount to GroupCard
+- [x] Update `frontend/src/components/groups/group-card.tsx` - add Delete button logic for group creator
+- [x] Update `frontend/src/lib/typings/models.ts` - add memberCount property to Group interface
+- [x] Add `deleteGroup` API method in `frontend/src/lib/api/groups-api.ts`
+- [x] Update `frontend/src/app/groups/page.tsx` - handle delete action and show feedback messages
 
-## Frontend - API Layer
-- [x] Create `notifications-api.ts` with fetch wrappers for notifications
-
-## Frontend - UI Components
-- [x] Create `ui/popover.tsx` - Shadcn-style Popover component
-- [x] Create `ui/button.tsx` - Shadcn-style Button component
-- [x] Create `ui/badge.tsx` - Badge component for unread count
-- [x] Create `ui/scroll-area.tsx` - ScrollArea component
-- [x] Create `ui/command.tsx` - Command component for combobox
-
-## Frontend - Feature Components
-- [x] Create `user-selector.tsx` - Dropdown to select active user
-- [x] Create `notification-bell.tsx` - Bell icon with Popover showing notifications
-- [x] Create `navbar.tsx` - Navbar containing UserSelector and NotificationBell
-
-## Frontend - Integration
-- [x] Update `layout.tsx` to include Navbar
-- [x] Create notification hooks using TanStack Query
-
-## Verification
-- [x] Run build to verify everything compiles correctly ✓
+## All tasks completed!
 
 
 

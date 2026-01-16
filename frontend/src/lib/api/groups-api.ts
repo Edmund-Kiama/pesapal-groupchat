@@ -1,7 +1,8 @@
 import { Group, GroupMember, GroupInvite } from "@/lib/typings/models";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
-const API_BASE = "/api/v1";
+const API_URL =
+  process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001/api/v1";
 
 // Helper to get auth headers
 const getAuthHeaders = () => {
@@ -19,7 +20,7 @@ const getAuthHeaders = () => {
 export const groupApi = {
   // Create a new group (Admin only)
   createGroup: async (data: { name: string; description: string }) => {
-    const response = await fetch(`${API_BASE}/group`, {
+    const response = await fetch(`${API_URL}/group`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -29,7 +30,7 @@ export const groupApi = {
 
   // Get all groups (visible to all authenticated users)
   getAllGroups: async (): Promise<{ success: boolean; data: Group[] }> => {
-    const response = await fetch(`${API_BASE}/group`, {
+    const response = await fetch(`${API_URL}/group`, {
       method: "GET",
       headers: getAuthHeaders(),
     });
@@ -40,7 +41,7 @@ export const groupApi = {
   getGroupById: async (
     groupId: number
   ): Promise<{ success: boolean; data: Group }> => {
-    const response = await fetch(`${API_BASE}/group/${groupId}`, {
+    const response = await fetch(`${API_URL}/group/${groupId}`, {
       method: "GET",
       headers: getAuthHeaders(),
     });
@@ -51,7 +52,7 @@ export const groupApi = {
   getGroupMembers: async (
     groupId: number
   ): Promise<{ success: boolean; data: GroupMember[] }> => {
-    const response = await fetch(`${API_BASE}/group/${groupId}/members`, {
+    const response = await fetch(`${API_URL}/group/${groupId}/members`, {
       method: "GET",
       headers: getAuthHeaders(),
     });
@@ -60,8 +61,19 @@ export const groupApi = {
 
   // Get user's groups (through GroupMember)
   getMyGroups: async (): Promise<{ success: boolean; data: GroupMember[] }> => {
-    const response = await fetch(`${API_BASE}/group/memberships`, {
+    const response = await fetch(`${API_URL}/group/memberships`, {
       method: "GET",
+      headers: getAuthHeaders(),
+    });
+    return response.json();
+  },
+
+  // Delete a group (only creator can delete)
+  deleteGroup: async (
+    groupId: number
+  ): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_URL}/group/${groupId}`, {
+      method: "DELETE",
       headers: getAuthHeaders(),
     });
     return response.json();
@@ -69,7 +81,7 @@ export const groupApi = {
 
   // Add member to group (Admin only)
   addMember: async (data: { users: number[]; groupId: number }) => {
-    const response = await fetch(`${API_BASE}/group/add-member`, {
+    const response = await fetch(`${API_URL}/group/add-member`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -85,7 +97,7 @@ export const groupApi = {
 export const groupInviteApi = {
   // Create group invite (Admin only)
   createInvite: async (data: { receiverId: number; groupId: number }) => {
-    const response = await fetch(`${API_BASE}/group-invite`, {
+    const response = await fetch(`${API_URL}/group-invite`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -98,7 +110,7 @@ export const groupInviteApi = {
     receiverId: number
   ): Promise<{ success: boolean; data: GroupInvite[] }> => {
     const response = await fetch(
-      `${API_BASE}/group-invite/receiver/${receiverId}`,
+      `${API_URL}/group-invite/receiver/${receiverId}`,
       {
         method: "GET",
         headers: getAuthHeaders(),
@@ -111,13 +123,10 @@ export const groupInviteApi = {
   getSentInvites: async (
     senderId: number
   ): Promise<{ success: boolean; data: GroupInvite[] }> => {
-    const response = await fetch(
-      `${API_BASE}/group-invite/sender/${senderId}`,
-      {
-        method: "GET",
-        headers: getAuthHeaders(),
-      }
-    );
+    const response = await fetch(`${API_URL}/group-invite/sender/${senderId}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
     return response.json();
   },
 
@@ -126,7 +135,7 @@ export const groupInviteApi = {
     groupInviteId: number;
     status: "accepted" | "declined";
   }) => {
-    const response = await fetch(`${API_BASE}/group-invite/response`, {
+    const response = await fetch(`${API_URL}/group-invite/response`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),

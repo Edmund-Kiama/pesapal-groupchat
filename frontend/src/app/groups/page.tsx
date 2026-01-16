@@ -6,9 +6,9 @@ import { UserRole } from "@/lib/typings/models";
 import { CreateGroupForm } from "@/components/groups/create-group-form";
 import { GroupList } from "@/components/groups/group-list";
 import { PendingGroupInvites } from "@/components/groups/pending-group-invites";
-import { InviteUserForm } from "@/components/groups/invite-user-form";
 import { Button } from "@/components/ui/button";
-import { Users, Mail, Plus, UserPlus } from "lucide-react";
+import { Users, Plus } from "lucide-react";
+import { groupApi } from "@/lib/api/groups-api";
 
 // Create tabs component since it doesn't exist
 function Tabs({
@@ -69,19 +69,54 @@ export default function GroupsPage() {
   const isAdmin = user?.role === UserRole.ADMIN;
   const [activeTab, setActiveTab] = useState("my-groups");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
+  const [actionMessage, setActionMessage] = useState<{
+    type: "success" | "error" | "";
+    text: string;
+  }>({ type: "", text: "" });
 
   const handleGroupCreated = (groupId: number) => {
     setRefreshKey((prev) => prev + 1);
-  };
-
-  const handleInviteSent = () => {
-    // Refresh groups list when invite is sent
-    setRefreshKey((prev) => prev + 1);
+    setIsCreateGroupOpen(false);
+    setActionMessage({ type: "success", text: "Group created successfully!" });
+    setTimeout(() => setActionMessage({ type: "", text: "" }), 3000);
   };
 
   const handleInviteAccepted = (groupId: number) => {
     // Refresh groups list when invite is accepted
     setRefreshKey((prev) => prev + 1);
+    setActionMessage({ type: "success", text: "Invite accepted!" });
+    setTimeout(() => setActionMessage({ type: "", text: "" }), 3000);
+  };
+
+  const handleLeaveOrDeleteGroup = async (groupId: number) => {
+    if (!confirm("Are you sure you want to delete this group?")) {
+      return;
+    }
+
+    try {
+      const response = await groupApi.deleteGroup(groupId);
+      if (response.success) {
+        setActionMessage({
+          type: "success",
+          text: "Group deleted successfully!",
+        });
+        setRefreshKey((prev) => prev + 1);
+      } else {
+        setActionMessage({
+          type: "error",
+          text: response.message || "Failed to delete group",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting group:", error);
+      setActionMessage({
+        type: "error",
+        text: "Failed to delete the group. You may need to leave instead.",
+      });
+    }
+
+    setTimeout(() => setActionMessage({ type: "", text: "" }), 5000);
   };
 
   return (
@@ -90,7 +125,7 @@ export default function GroupsPage() {
         <h1 className="text-3xl font-bold">Groups</h1>
         {isAdmin && (
           <Button
-            onClick={() => setActiveTab("create-group")}
+            onClick={() => setIsCreateGroupOpen(true)}
             className="flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
@@ -98,6 +133,21 @@ export default function GroupsPage() {
           </Button>
         )}
       </div>
+
+      {/* Action message */}
+      {actionMessage.text && (
+        <div
+          className={`mb-4 p-3 rounded-md ${
+            actionMessage.type === "success"
+              ? "bg-green-100 text-green-800"
+              : actionMessage.type === "error"
+              ? "bg-red-100 text-red-800"
+              : "bg-gray-100"
+          }`}
+        >
+          {actionMessage.text}
+        </div>
+      )}
 
       {/* Pending Invites - Visible to all users */}
       <div className="mb-8">
@@ -113,15 +163,6 @@ export default function GroupsPage() {
             <Users className="h-4 w-4 mr-2" />
             My Groups
           </TabsTrigger>
-          {isAdmin && (
-            <TabsTrigger
-              value="create-group"
-              onClick={() => setActiveTab("create-group")}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Group
-            </TabsTrigger>
-          )}
         </TabsList>
 
         <TabsContent value="my-groups">
@@ -131,18 +172,28 @@ export default function GroupsPage() {
               console.log("View group:", groupId);
               // TODO: Navigate to group details page
             }}
+            onLeaveGroup={handleLeaveOrDeleteGroup}
           />
         </TabsContent>
-
-        {isAdmin && (
-          <TabsContent value="create-group">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <CreateGroupForm onGroupCreated={handleGroupCreated} />
-              {/* Additional admin tools can go here */}
-            </div>
-          </TabsContent>
-        )}
       </Tabs>
+
+      {/* Centered Modal Overlay */}
+      {isCreateGroupOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsCreateGroupOpen(false)}
+          />
+          {/* Modal Content */}
+          <div className="relative z-10 w-full max-w-md mx-4">
+            <CreateGroupForm
+              onGroupCreated={handleGroupCreated}
+              onCancel={() => setIsCreateGroupOpen(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

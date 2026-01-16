@@ -18,6 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Loader2, UserPlus } from "lucide-react";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -59,7 +60,10 @@ export default function SignupPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Create an Account</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            Create an Account
+          </CardTitle>
           <CardDescription>Sign up to get started</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -113,9 +117,17 @@ export default function SignupPage() {
               className="w-full"
               disabled={signupMutation.isPending}
             >
-              {signupMutation.isPending
-                ? "Creating account..."
-                : "Create Account"}
+              {signupMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Create Account
+                </>
+              )}
             </Button>
             <p className="text-sm text-muted-foreground text-center">
               Already have an account?{" "}

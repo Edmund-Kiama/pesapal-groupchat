@@ -11,13 +11,17 @@ import {
 } from "@/components/ui/card";
 import { groupApi } from "@/lib/api/groups-api";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Plus, Users } from "lucide-react";
+import { Loader2, Plus, Users, X } from "lucide-react";
 
 interface CreateGroupFormProps {
   onGroupCreated?: (groupId: number) => void;
+  onCancel?: () => void;
 }
 
-export function CreateGroupForm({ onGroupCreated }: CreateGroupFormProps) {
+export function CreateGroupForm({
+  onGroupCreated,
+  onCancel,
+}: CreateGroupFormProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -64,7 +68,15 @@ export function CreateGroupForm({ onGroupCreated }: CreateGroupFormProps) {
   };
 
   return (
-    <Card>
+    <Card className="relative">
+      {onCancel && (
+        <button
+          onClick={onCancel}
+          className="absolute top-4 right-4 z-10 p-1 hover:bg-gray-100 rounded-full transition-colors"
+        >
+          <X className="h-5 w-5 text-muted-foreground" />
+        </button>
+      )}
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
@@ -118,6 +130,17 @@ export function CreateGroupForm({ onGroupCreated }: CreateGroupFormProps) {
               </>
             )}
           </Button>
+          {onCancel && (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isLoading}
+              className="w-full mt-2"
+              onClick={onCancel}
+            >
+              Cancel
+            </Button>
+          )}
         </form>
       </CardContent>
     </Card>

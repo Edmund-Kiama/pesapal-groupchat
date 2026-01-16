@@ -7,9 +7,13 @@ import { Loader2 } from "lucide-react";
 
 interface GroupListProps {
   onViewGroupDetails?: (groupId: number) => void;
+  onLeaveGroup?: (groupId: number) => void;
 }
 
-export function GroupList({ onViewGroupDetails }: GroupListProps) {
+export function GroupList({
+  onViewGroupDetails,
+  onLeaveGroup,
+}: GroupListProps) {
   const [memberships, setMemberships] = useState<GroupMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuthStore();
@@ -29,6 +33,13 @@ export function GroupList({ onViewGroupDetails }: GroupListProps) {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLeaveGroup = (groupId: number) => {
+    // Trigger the callback
+    onLeaveGroup?.(groupId);
+    // Refresh the list after action
+    fetchMyGroups();
   };
 
   if (isLoading) {
@@ -59,8 +70,11 @@ export function GroupList({ onViewGroupDetails }: GroupListProps) {
           key={membership.id}
           groupName={membership.group?.name || "Unknown Group"}
           description={membership.group?.description || undefined}
-          memberCount={membership.group?.members?.length || 0}
+          memberCount={membership.group?.memberCount || 0}
+          creatorId={membership.group?.created_by}
+          currentUserId={user?.id}
           onViewDetails={() => onViewGroupDetails?.(membership.groupId)}
+          onLeaveGroup={() => handleLeaveGroup(membership.groupId)}
         />
       ))}
     </div>

@@ -6,19 +6,23 @@ interface GroupCardProps {
   groupName: string;
   description?: string;
   memberCount: number;
+  creatorId?: number;
+  currentUserId?: number;
   onViewDetails?: () => void;
   onLeaveGroup?: () => void;
-  isAdmin?: boolean;
 }
 
 export function GroupCard({
   groupName,
   description,
   memberCount,
+  creatorId,
+  currentUserId,
   onViewDetails,
   onLeaveGroup,
-  isAdmin,
 }: GroupCardProps) {
+  const isCreator = creatorId === currentUserId;
+
   return (
     <Card className="w-full hover:shadow-lg transition-shadow duration-200">
       <CardHeader className="pb-3">
@@ -47,7 +51,16 @@ export function GroupCard({
           >
             View Details
           </Button>
-          {!isAdmin && (
+          {isCreator ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={onLeaveGroup}
+              className="text-white hover:text-white"
+            >
+              Delete
+            </Button>
+          ) : (
             <Button
               variant="ghost"
               size="sm"
