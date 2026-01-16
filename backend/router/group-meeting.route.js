@@ -24,6 +24,7 @@ groupMeetingRouter.get(
   getGroupMeetingsByUserMembership
 );
 groupMeetingRouter.get("/:meetingId", getGroupMeetingsById);
-groupMeetingRouter.get("/group/groupId", getGroupMeetingsByGroupId);
+groupMeetingRouter.get("/group/:groupId", getGroupMeetingsByGroupId);
+
 
 export default groupMeetingRouter;
