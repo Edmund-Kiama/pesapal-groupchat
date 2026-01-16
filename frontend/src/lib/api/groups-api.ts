@@ -178,6 +178,65 @@ export const groupInviteApi = {
 };
 
 // ============================================
+// Group Chat API
+// ============================================
+
+export interface GroupChat {
+  id: number;
+  content: string;
+  senderId: number;
+  groupId: number;
+  createdAt: string;
+  updatedAt: string;
+  sender?: {
+    id: number;
+    name: string;
+    role: string;
+  };
+  group?: {
+    id: number;
+    name: string;
+  };
+}
+
+export const groupChatApi = {
+  // Get all chats for a group
+  getGroupChats: async (
+    groupId: number
+  ): Promise<{ success: boolean; data: GroupChat[] }> => {
+    const response = await fetch(`${API_URL}/group-chat/group/${groupId}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    return response.json();
+  },
+
+  // Send a chat message to a group
+  sendGroupChat: async (data: {
+    content: string;
+    groupId: number;
+  }): Promise<{ success: boolean; data: GroupChat }> => {
+    const response = await fetch(`${API_URL}/group-chat`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  // Delete a chat message
+  deleteChat: async (
+    chatId: number
+  ): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_URL}/group-chat/${chatId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
+    });
+    return response.json();
+  },
+};
+
+// ============================================
 // Group Meeting API
 // ============================================
 

@@ -140,10 +140,6 @@ export default function GroupsPage() {
         <TabsContent value="my-groups">
           <GroupList
             key={refreshKey}
-            onViewGroupDetails={(groupId) => {
-              console.log("View group:", groupId);
-              // TODO: Navigate to group details page
-            }}
             onLeaveGroup={(groupId, groupName) =>
               handleOpenLeaveDialog(groupId, groupName)
             }

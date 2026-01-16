@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, Calendar } from "lucide-react";
+import { Users, MessageCircle } from "lucide-react";
 
 interface GroupCardProps {
   groupName: string;
@@ -8,7 +8,7 @@ interface GroupCardProps {
   memberCount: number;
   creatorId?: number;
   currentUserId?: number;
-  onViewDetails?: () => void;
+  onOpenChat?: () => void;
   onLeaveGroup?: () => void;
   onDeleteGroup?: () => void;
   onManageMeetings?: () => void;
@@ -20,7 +20,7 @@ export function GroupCard({
   memberCount,
   creatorId,
   currentUserId,
-  onViewDetails,
+  onOpenChat,
   onLeaveGroup,
   onDeleteGroup,
   onManageMeetings,
@@ -47,12 +47,12 @@ export function GroupCard({
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={onViewDetails}>
-            View Details
+          <Button variant="default" size="sm" onClick={onOpenChat}>
+            <MessageCircle className="mr-1 h-4 w-4" />
+            Open Chat
           </Button>
           {isCreator && onManageMeetings && (
-            <Button variant="default" size="sm" onClick={onManageMeetings}>
-              <Calendar className="mr-1 h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={onManageMeetings}>
               Meetings
             </Button>
           )}

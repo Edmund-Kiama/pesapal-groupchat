@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { GroupCard } from "./group-card";
 import { groupApi } from "@/lib/api/groups-api";
 import { useAuthStore } from "@/lib/stores/auth-store";
@@ -6,19 +7,20 @@ import { GroupMember } from "@/lib/typings/models";
 import { Loader2 } from "lucide-react";
 
 interface GroupListProps {
-  onViewGroupDetails?: (groupId: number) => void;
+  onOpenChat?: (groupId: number) => void;
   onLeaveGroup?: (groupId: number, groupName: string) => void;
   onDeleteGroup?: (groupId: number, groupName: string) => void;
 }
 
 export function GroupList({
-  onViewGroupDetails,
+  onOpenChat,
   onLeaveGroup,
   onDeleteGroup,
 }: GroupListProps) {
   const [memberships, setMemberships] = useState<GroupMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
     fetchMyGroups();
@@ -39,6 +41,13 @@ export function GroupList({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleOpenChat = (groupId: number) => {
+    // Navigate to group chat page
+    router.push(`/groups/${groupId}`);
+    // Also trigger the callback if provided
+    onOpenChat?.(groupId);
   };
 
   const handleLeaveGroup = (groupId: number, groupName: string) => {
@@ -86,7 +95,7 @@ export function GroupList({
           memberCount={membership.group?.memberCount || 0}
           creatorId={membership.group?.created_by}
           currentUserId={user?.id}
-          onViewDetails={() => onViewGroupDetails?.(membership.groupId)}
+          onOpenChat={() => handleOpenChat(membership.groupId)}
           onLeaveGroup={() =>
             handleLeaveGroup(membership.groupId, membership.group?.name || "")
           }

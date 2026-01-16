@@ -4,12 +4,14 @@ import {
   getChatByGroupId,
   getChatById,
   getChatByUserId,
+  deleteChat,
 } from "../controllers/group-chat.controller.js";
 
 const groupChatRouter = Router();
 
 // --> /api/v1/group-chat
 groupChatRouter.post("/", sendChat);
+groupChatRouter.delete("/:chatId", deleteChat);
 groupChatRouter.get("/:chatId", getChatById);
 groupChatRouter.get("/group/:groupId", getChatByGroupId);
 groupChatRouter.get("/user/:userId", getChatByUserId);

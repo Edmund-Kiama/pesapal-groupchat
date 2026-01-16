@@ -95,16 +95,10 @@ export const getChatByGroupId = async (req, res, next) => {
       order: [["createdAt", "ASC"]],
     });
 
-    if (groupChats.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "Group Chat not found",
-      });
-    }
-
+    // Return empty array if no chats found (not an error)
     res.status(200).json({
       success: true,
-      data: groupChats?.map((gc) => gc?.toJSON()),
+      data: groupChats?.map((gc) => gc?.toJSON()) || [],
     });
   } catch (error) {
     next(error);
@@ -132,6 +126,41 @@ export const getChatByUserId = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: userChats?.map((uc) => uc?.toJSON()),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteChat = async (req, res, next) => {
+  try {
+    const { chatId } = req.params;
+    const userId = req.user.id;
+
+    // Find the chat
+    const chat = await GroupChat.findByPk(chatId);
+
+    if (!chat) {
+      return res.status(404).json({
+        success: false,
+        message: "Chat not found",
+      });
+    }
+
+    // Only the sender can delete their own chat
+    if (chat.senderId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only delete your own messages",
+      });
+    }
+
+    // Delete the chat
+    await chat.destroy();
+
+    res.status(200).json({
+      success: true,
+      message: "Chat deleted successfully",
     });
   } catch (error) {
     next(error);

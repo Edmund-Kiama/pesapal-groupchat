@@ -397,9 +397,17 @@ export const getGroupById = async (req, res, next) => {
       });
     }
 
+    // Get member count
+    const memberCount = await GroupMember.count({
+      where: { groupId },
+    });
+
+    const groupData = group.toJSON();
+    groupData.memberCount = memberCount;
+
     res.status(200).json({
       success: true,
-      data: group?.toJSON(),
+      data: groupData,
     });
   } catch (error) {
     next(error);
