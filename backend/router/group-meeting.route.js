@@ -6,6 +6,7 @@ import {
   getGroupMeetingsByGroupId,
   groupMeetingResponse,
   getGroupMeetingsByCreator,
+  getGroupMeetingsByUserMembership,
 } from "../controllers/group-meeting.controller.js";
 import { adminOnlyAuth } from "../middleware/auth.middleware.js";
 
@@ -17,6 +18,11 @@ groupMeetingRouter.post("/response", groupMeetingResponse);
 groupMeetingRouter.get("/", getGroupMeetings);
 // Get meetings for groups created by a specific user
 groupMeetingRouter.get("/creator/:userId", getGroupMeetingsByCreator);
+// Get meetings for groups that a user is a member of
+groupMeetingRouter.get(
+  "/user/:userId/groups",
+  getGroupMeetingsByUserMembership
+);
 groupMeetingRouter.get("/:meetingId", getGroupMeetingsById);
 groupMeetingRouter.get("/group/groupId", getGroupMeetingsByGroupId);
 

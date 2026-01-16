@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { GroupMeeting } from "@/lib/typings/models";
 import { groupMeetingApi } from "@/lib/api/groups-api";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { UserRole } from "@/lib/typings/models";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,9 +39,13 @@ export function MeetingsTable() {
   const fetchMeetings = async () => {
     try {
       setLoading(true);
-      const response = await groupMeetingApi.getMeetings();
-      if (response.success) {
-        setMeetings(response.data || []);
+      let response;
+      // Get meetings for groups the user is a member of
+      if (user) {
+        response = await groupMeetingApi.getMeetingsByUserMembership(user.id);
+        if (response.success) {
+          setMeetings(response.data || []);
+        }
       }
     } catch (err: any) {
       setError(err.message || "Failed to fetch meetings");
@@ -157,7 +162,7 @@ export function MeetingsTable() {
                             `User #${meeting.created_by}`}
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 justify-center">
                             <Badge variant="default" className="text-xs">
                               {stats.accepted} ✓
                             </Badge>

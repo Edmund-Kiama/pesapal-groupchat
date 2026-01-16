@@ -54,9 +54,14 @@ export function MembersTable() {
   const fetchMemberships = async () => {
     try {
       setLoading(true);
-      const response = await membershipsApi.getAllMemberships();
-      if (response.success) {
-        setMemberships(response.data || []);
+      // Get memberships for groups the user is a member of
+      if (user) {
+        const response = await membershipsApi.getMembershipsByUserMembership(
+          user.id
+        );
+        if (response.success) {
+          setMemberships(response.data || []);
+        }
       }
     } catch (err: any) {
       setError(err.message || "Failed to fetch memberships");

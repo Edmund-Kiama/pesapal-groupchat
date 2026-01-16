@@ -140,32 +140,35 @@ export default function Home() {
 
       {/* Dashboard Tables Section */}
       <Tabs defaultValue="overview">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
+        <TabsList className="mb-4 grid w-full grid-cols-4 lg:grid-cols-7">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="notifications">
-            <Bell className="h-4 w-4 mr-1" />
+          <TabsTrigger
+            value="notifications"
+            className="flex items-center gap-1"
+          >
+            <Bell className="h-4 w-4" />
             Notifications
           </TabsTrigger>
-          <TabsTrigger value="groups">
-            <Users className="h-4 w-4 mr-1" />
+          <TabsTrigger value="groups" className="flex items-center gap-1">
+            <Users className="h-4 w-4" />
             Groups
           </TabsTrigger>
-          <TabsTrigger value="meetings">
-            <Calendar className="h-4 w-4 mr-1" />
+          <TabsTrigger value="meetings" className="flex items-center gap-1">
+            <Calendar className="h-4 w-4" />
             Meetings
           </TabsTrigger>
-          <TabsTrigger value="invites">
-            <UserPlus className="h-4 w-4 mr-1" />
+          <TabsTrigger value="invites" className="flex items-center gap-1">
+            <UserPlus className="h-4 w-4" />
             Invites
           </TabsTrigger>
           {isAdmin && (
             <>
-              <TabsTrigger value="members">
-                <UserMinus className="h-4 w-4 mr-1" />
+              <TabsTrigger value="members" className="flex items-center gap-1">
+                <UserMinus className="h-4 w-4" />
                 Members
               </TabsTrigger>
-              <TabsTrigger value="users">
-                <Settings className="h-4 w-4 mr-1" />
+              <TabsTrigger value="users" className="flex items-center gap-1">
+                <Settings className="h-4 w-4" />
                 Users
               </TabsTrigger>
             </>

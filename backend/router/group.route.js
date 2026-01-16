@@ -12,6 +12,7 @@ import {
   getGroupsByCreator,
   getMembershipsByCreator,
   removeMember,
+  getMembershipsByUserMembership,
 } from "../controllers/group.controller.js";
 import { adminOnlyAuth } from "../middleware/auth.middleware.js";
 
@@ -27,6 +28,8 @@ groupRouter.get("/creator/:userId", getGroupsByCreator);
 groupRouter.get("/memberships", getMemberships);
 // Get memberships for groups created by a specific user (admin's groups)
 groupRouter.get("/memberships/creator/:userId", getMembershipsByCreator);
+// Get memberships for groups that a user is a member of
+groupRouter.get("/memberships/user/:userId", getMembershipsByUserMembership);
 groupRouter.get("/user/:userId/groups", getUserGroups);
 groupRouter.get("/:groupId", getGroupById);
 groupRouter.get("/:groupId/members", getGroupUsers);

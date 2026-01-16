@@ -474,3 +474,62 @@ export const getGroupMeetingsByCreator = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get meetings for groups that a user is a member of
+export const getGroupMeetingsByUserMembership = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // Get all group memberships for this user
+    const memberships = await GroupMember.findAll({
+      where: { userId },
+      attributes: ["groupId"],
+    });
+
+    if (memberships.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "User is not a member of any groups",
+        data: [],
+      });
+    }
+
+    const userGroupIds = memberships.map((m) => m.groupId);
+
+    // Get meetings for these groups
+    const meetings = await GroupMeeting.findAll({
+      where: { groupId: userGroupIds },
+      include: [
+        {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name", "description"],
+        },
+        {
+          model: User,
+          as: "creator",
+          attributes: ["id", "name"],
+        },
+        {
+          model: GroupMeetingInvite,
+          as: "invited",
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: ["id", "name", "email"],
+            },
+          ],
+        },
+      ],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: meetings?.map((m) => m?.toJSON()),
+    });
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+};

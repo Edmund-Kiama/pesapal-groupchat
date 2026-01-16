@@ -24,6 +24,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { CancelInviteDialog } from "./dialogs";
 
 export function GroupInvitesTable() {
   const { user } = useAuthStore();
@@ -33,6 +34,12 @@ export function GroupInvitesTable() {
   const [processing, setProcessing] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
+
+  // Dialog state for cancelling sent invites
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedInvite, setSelectedInvite] = useState<GroupInvite | null>(
+    null
+  );
 
   useEffect(() => {
     if (user) {
@@ -170,7 +177,10 @@ export function GroupInvitesTable() {
               variant="destructive"
               size="sm"
               disabled={processing === invite.id}
-              onClick={() => handleCancelInvite(invite.id)}
+              onClick={() => {
+                setSelectedInvite(invite);
+                setCancelDialogOpen(true);
+              }}
               title="Cancel invite"
             >
               {processing === invite.id ? (
@@ -189,75 +199,88 @@ export function GroupInvitesTable() {
     activeTab === "received" ? receivedInvites : sentInvites;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5" />
-          Group Invites
-        </CardTitle>
-        <Button variant="outline" size="sm" onClick={fetchInvites}>
-          Refresh
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <div className="flex gap-2 mb-4">
-          <Button
-            variant={activeTab === "received" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveTab("received")}
-          >
-            Received ({receivedInvites.length})
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            Group Invites
+          </CardTitle>
+          <Button variant="outline" size="sm" onClick={fetchInvites}>
+            Refresh
           </Button>
-          <Button
-            variant={activeTab === "sent" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setActiveTab("sent")}
-          >
-            Sent ({sentInvites.length})
-          </Button>
-        </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant={activeTab === "received" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("received")}
+            >
+              Received ({receivedInvites.length})
+            </Button>
+            <Button
+              variant={activeTab === "sent" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab("sent")}
+            >
+              Sent ({sentInvites.length})
+            </Button>
+          </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : error ? (
-          <div className="flex items-center justify-center py-8 text-red-500">
-            <AlertCircle className="h-5 w-5 mr-2" />
-            {error}
-          </div>
-        ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>
-                    {activeTab === "received" ? "From" : "To"}
-                  </TableHead>
-                  <TableHead>Group</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Sent At</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentInvites.length === 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-8 text-red-500">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              {error}
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      No {activeTab} invites found
-                    </TableCell>
+                    <TableHead>ID</TableHead>
+                    <TableHead>
+                      {activeTab === "received" ? "From" : "To"}
+                    </TableHead>
+                    <TableHead>Group</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Sent At</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ) : (
-                  currentInvites.map((invite) =>
-                    renderInviteRow(invite, activeTab === "received")
-                  )
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                </TableHeader>
+                <TableBody>
+                  {currentInvites.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8">
+                        No {activeTab} invites found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    currentInvites.map((invite) =>
+                      renderInviteRow(invite, activeTab === "received")
+                    )
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Cancel Invite Dialog */}
+      <CancelInviteDialog
+        invite={selectedInvite}
+        isOpen={cancelDialogOpen}
+        onClose={() => {
+          setCancelDialogOpen(false);
+          setSelectedInvite(null);
+        }}
+        onSuccess={fetchInvites}
+      />
+    </>
   );
 }

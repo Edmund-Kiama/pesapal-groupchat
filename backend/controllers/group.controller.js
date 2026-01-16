@@ -221,16 +221,38 @@ export const getGroups = async (req, res, next) => {
       ],
     });
 
+    // Get member counts for each group
+    const groupIds = groups.map((g) => g.id);
+    const memberCounts = await GroupMember.findAll({
+      where: { groupId: groupIds },
+      attributes: [
+        "groupId",
+        [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+      ],
+      group: ["groupId"],
+    });
+
+    const countMap = {};
+    memberCounts.forEach((row) => {
+      countMap[row.groupId] = row.dataValues.count;
+    });
+
+    // Enrich each group with member count
+    const enrichedData = groups.map((g) => {
+      const json = g.toJSON();
+      json.memberCount = countMap[g.id] || 0;
+      return json;
+    });
+
     // Return all records
     res.status(200).json({
       success: true,
-      data: groups.map((g) => g.toJSON()),
+      data: enrichedData,
     });
   } catch (error) {
     next(error);
   }
 };
-
 
 export const getMemberships = async (req, res, next) => {
   try {
@@ -489,7 +511,8 @@ export const leaveGroup = async (req, res, next) => {
       await transaction.rollback();
       return res.status(403).json({
         success: false,
-        message: "Group creators cannot leave. Please delete the group instead.",
+        message:
+          "Group creators cannot leave. Please delete the group instead.",
       });
     }
 
@@ -670,6 +693,77 @@ export const removeMember = async (req, res, next) => {
   } catch (error) {
     await transaction.rollback();
     console.error("RemoveMember Error:", error);
+    next(error);
+  }
+};
+
+// Get memberships for groups that a user is a member of
+export const getMembershipsByUserMembership = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // Get all group memberships for this user
+    const userMemberships = await GroupMember.findAll({
+      where: { userId },
+      attributes: ["groupId"],
+    });
+
+    if (userMemberships.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "User is not a member of any groups",
+        data: [],
+      });
+    }
+
+    const userGroupIds = userMemberships.map((m) => m.groupId);
+
+    // Get all memberships for these groups
+    const members = await GroupMember.findAll({
+      where: { groupId: userGroupIds },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email", "role"],
+        },
+        {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name", "description", "created_by"],
+        },
+      ],
+    });
+
+    // Get member counts for each group
+    const groupIds = [...new Set(members.map((m) => m.groupId))];
+    const memberCounts = await GroupMember.findAll({
+      where: { groupId: groupIds },
+      attributes: [
+        "groupId",
+        [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+      ],
+      group: ["groupId"],
+    });
+
+    const countMap = {};
+    memberCounts.forEach((row) => {
+      countMap[row.groupId] = row.dataValues.count;
+    });
+
+    // Enrich each membership with member count
+    const enrichedData = members.map((m) => {
+      const json = m.toJSON();
+      json.group = json.group || {};
+      json.group.memberCount = countMap[m.groupId] || 0;
+      return json;
+    });
+
+    res.status(200).json({
+      success: true,
+      data: enrichedData,
+    });
+  } catch (error) {
     next(error);
   }
 };

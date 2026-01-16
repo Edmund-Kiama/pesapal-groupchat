@@ -235,4 +235,23 @@ export const membershipsApi = {
 
     return response.json();
   },
+
+  // Get memberships for groups that a user is a member of
+  getMembershipsByUserMembership: async (
+    userId: number
+  ): Promise<MembershipsResponse> => {
+    const response = await fetch(
+      `${API_URL}/group/memberships/user/${userId}`,
+      {
+        method: "GET",
+        headers: getAuthHeaders(),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch memberships by user membership");
+    }
+
+    return response.json();
+  },
 };

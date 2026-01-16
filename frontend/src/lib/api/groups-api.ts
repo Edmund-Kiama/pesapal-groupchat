@@ -217,6 +217,20 @@ export const groupMeetingApi = {
     return response.json();
   },
 
+  // Get meetings for groups that a user is a member of
+  getMeetingsByUserMembership: async (
+    userId: number
+  ): Promise<{ success: boolean; data: any[] }> => {
+    const response = await fetch(
+      `${API_URL}/group-meeting/user/${userId}/groups`,
+      {
+        method: "GET",
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.json();
+  },
+
   // Get meeting by ID
   getMeetingById: async (
     meetingId: number
