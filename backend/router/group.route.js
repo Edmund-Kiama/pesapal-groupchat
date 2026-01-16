@@ -6,6 +6,7 @@ import {
   getGroupUsers,
   addMember,
   getMemberships,
+  deleteGroup,
 } from "../controllers/group.controller.js";
 import { adminOnlyAuth } from "../middleware/auth.middleware.js";
 
@@ -19,6 +20,7 @@ groupRouter.get("/", getGroups);
 groupRouter.get("/memberships", getMemberships);
 groupRouter.get("/:groupId", getGroupById);
 groupRouter.get("/:groupId/members", getGroupUsers);
+groupRouter.delete("/:groupId", adminOnlyAuth, deleteGroup);
 
 
 export default groupRouter;

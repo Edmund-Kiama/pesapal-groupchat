@@ -239,28 +239,52 @@ export const getMemberships = async (req, res, next) => {
       include: [
         {
           model: User,
-          as: "user", 
-          attributes:["id", "name", "email", "role"],
+          as: "user",
+          attributes: ["id", "name", "email", "role"],
         },
         {
           model: Group,
-          as: "group", 
-          attributes: ["id", "name", "description"]
+          as: "group",
+          attributes: ["id", "name", "description", "created_by"],
         },
       ],
     });
 
-    if(members?.length === 0 ) {
+    if (members?.length === 0) {
       return res.status(200).json({
         success: true,
-        message: "No memberships found"
-      })
+        message: "No memberships found",
+      });
     }
+
+    // Get member counts for each group
+    const groupIds = [...new Set(members.map((m) => m.groupId))];
+    const memberCounts = await GroupMember.findAll({
+      where: { groupId: groupIds },
+      attributes: [
+        "groupId",
+        [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+      ],
+      group: ["groupId"],
+    });
+
+    const countMap = {};
+    memberCounts.forEach((row) => {
+      countMap[row.groupId] = row.dataValues.count;
+    });
+
+    // Enrich each membership with member count
+    const enrichedData = members.map((m) => {
+      const json = m.toJSON();
+      json.group = json.group || {};
+      json.group.memberCount = countMap[m.groupId] || 0;
+      return json;
+    });
 
     // return
     res.status(200).json({
       success: true,
-      data: members?.map(m=>m?.toJSON()),
+      data: enrichedData,
     });
   } catch (error) {
     next(error);
@@ -319,10 +343,63 @@ export const getGroupUsers = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: users?.map(u => u?.toJSON()),
+      data: users?.map((u) => u?.toJSON()),
     });
-
   } catch (error) {
+    next(error);
+  }
+};
+
+// Delete a group (only creator can delete)
+export const deleteGroup = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { groupId } = req.params;
+    const userId = req.user?.id;
+
+    // Fetch the group
+    const group = await Group.findByPk(groupId);
+    if (!group) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Group not found",
+      });
+    }
+
+    // Check if user is the creator
+    if (group.created_by !== userId) {
+      await transaction.rollback();
+      return res.status(403).json({
+        success: false,
+        message: "Only the group creator can delete this group",
+      });
+    }
+
+    // Delete related records (cascade)
+    // Delete group meetings first
+    const { GroupMeeting, GroupChat, GroupInvite, Notification } = await import(
+      "../models/index.js"
+    );
+
+    await GroupMeeting.destroy({ where: { groupId }, transaction });
+    await GroupChat.destroy({ where: { groupId }, transaction });
+    await GroupInvite.destroy({ where: { groupId }, transaction });
+    await Notification.destroy({ where: { groupId }, transaction });
+    await GroupMember.destroy({ where: { groupId }, transaction });
+
+    // Delete the group
+    await Group.destroy({ where: { id: groupId }, transaction });
+
+    await transaction.commit();
+
+    res.status(200).json({
+      success: true,
+      message: "Group deleted successfully",
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error("DeleteGroup Error:", error);
     next(error);
   }
 };
