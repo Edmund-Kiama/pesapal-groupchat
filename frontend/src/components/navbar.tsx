@@ -29,7 +29,7 @@ export function Navbar({ className }: NavbarProps) {
       )}
     >
       <div className="flex items-center gap-4">
-        <h1 className="text-xl font-bold">PesaPal</h1>
+        <h1 className="text-xl font-bold">Group Lenders</h1>
       </div>
       <div className="flex items-center gap-4">
         {isAuthenticated && user ? (

@@ -60,6 +60,15 @@ export const signUp = async (req, res, next) => {
     // Commit transaction
     await transaction.commit();
 
+    res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      data: {
+        token,
+        user: user?.toJSON(),
+      },
+    });
+
     // Side effects (non-transactional)
     await Promise.all([
       Notification.create({
@@ -81,15 +90,6 @@ export const signUp = async (req, res, next) => {
       }),
     ]);
 
-    // Response
-    res.status(201).json({
-      success: true,
-      message: "User created successfully",
-      data: {
-        token,
-        user: user?.toJSON(),
-      },
-    });
   } catch (error) {
     await transaction.rollback();
     console.error("SignUp Error:", error);
