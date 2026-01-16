@@ -286,3 +286,60 @@ export const groupInviteReceivedByReceiver = async (req, res, next) => {
     next(error);
   }
 };
+
+// Cancel a group invite (admin/sender only)
+export const cancelGroupInvite = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { inviteId } = req.params;
+    const userId = req.user?.id;
+
+    // Find the invite
+    const invite = await GroupInvite.findByPk(inviteId, {
+      include: [
+        { model: User, as: "receiver", attributes: ["id", "name", "email"] },
+        { model: Group, as: "group", attributes: ["id", "name"] },
+      ],
+    });
+
+    if (!invite) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Invite not found",
+      });
+    }
+
+    // Check if user is the sender (only sender can cancel)
+    if (invite.senderId !== userId) {
+      await transaction.rollback();
+      return res.status(403).json({
+        success: false,
+        message: "Only the sender can cancel this invite",
+      });
+    }
+
+    // Check if invite is still pending
+    if (invite.status !== "pending") {
+      await transaction.rollback();
+      return res.status(400).json({
+        success: false,
+        message: `Cannot cancel invite with status: ${invite.status}`,
+      });
+    }
+
+    // Delete the invite
+    await invite.destroy({ transaction });
+
+    await transaction.commit();
+
+    res.status(200).json({
+      success: true,
+      message: "Invite cancelled successfully",
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error("CancelGroupInvite Error:", error);
+    next(error);
+  }
+};

@@ -403,3 +403,58 @@ export const deleteGroup = async (req, res, next) => {
     next(error);
   }
 };
+
+// Leave a group (non-creator members only)
+export const leaveGroup = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { groupId } = req.params;
+    const userId = req.user?.id;
+
+    // Fetch the group
+    const group = await Group.findByPk(groupId);
+    if (!group) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Group not found",
+      });
+    }
+
+    // Check if user is the creator - creators cannot leave, they must delete
+    if (group.created_by === userId) {
+      await transaction.rollback();
+      return res.status(403).json({
+        success: false,
+        message: "Group creators cannot leave. Please delete the group instead.",
+      });
+    }
+
+    // Find the membership
+    const membership = await GroupMember.findOne({
+      where: { userId, groupId },
+    });
+
+    if (!membership) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "You are not a member of this group",
+      });
+    }
+
+    // Delete the membership
+    await membership.destroy({ transaction });
+
+    await transaction.commit();
+
+    res.status(200).json({
+      success: true,
+      message: "You have left the group successfully",
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error("LeaveGroup Error:", error);
+    next(error);
+  }
+};
