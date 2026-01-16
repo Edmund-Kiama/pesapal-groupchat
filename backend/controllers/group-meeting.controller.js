@@ -203,9 +203,8 @@ export const groupMeetingResponse = async (req, res, next) => {
     // update status
     invite.status = status;
     await invite.save({ transaction });
-    await transaction.commit();
 
-    const groupMeeting = invite.GroupMeeting;
+    const groupMeeting = invite.meeting;
     const meetingCreator = groupMeeting.created_by;
 
     const groupId = groupMeeting.groupId;
@@ -276,6 +275,9 @@ export const groupMeetingResponse = async (req, res, next) => {
     ]).catch((err) =>
       console.error("GroupMeetingResponse side effects failed:", err)
     );
+
+    await transaction.commit();
+
   } catch (error) {
     await transaction.rollback();
     console.error("GroupMeetingResponse Error:", error);
