@@ -13,17 +13,16 @@ import { Users, Mail, Plus, UserPlus } from "lucide-react";
 // Create tabs component since it doesn't exist
 function Tabs({
   children,
-  defaultValue,
+  value,
 }: {
   children: React.ReactNode;
-  defaultValue: string;
+  value: string;
 }) {
-  const [activeTab, setActiveTab] = useState(defaultValue);
   return (
-    <div data-tabs-value={activeTab}>
+    <div data-tabs-value={value}>
       {Array.isArray(children)
         ? children.map((child: any) => {
-            if (child?.props?.value === activeTab) return child;
+            if (child?.props?.value === value) return child;
             return null;
           })
         : children}
@@ -105,7 +104,7 @@ export default function GroupsPage() {
         <PendingGroupInvites onInviteAccepted={handleInviteAccepted} />
       </div>
 
-      <Tabs defaultValue={activeTab}>
+      <Tabs value={activeTab}>
         <TabsList>
           <TabsTrigger
             value="my-groups"

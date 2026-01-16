@@ -33,18 +33,31 @@ export function CreateGroupForm({ onGroupCreated }: CreateGroupFormProps) {
 
     setIsLoading(true);
     try {
+      console.log(
+        "Creating group with name:",
+        name,
+        "description:",
+        description
+      );
       const response = await groupApi.createGroup({ name, description });
+      console.log("Create group response:", response);
 
       if (response.success) {
         toast.success(`Group "${name}" created successfully`);
         setName("");
         setDescription("");
-        onGroupCreated?.(response.data.id);
+        onGroupCreated?.(response.data?.id);
       } else {
+        console.error("Group creation failed:", response.message);
         toast.error(response.message || "Failed to create group");
       }
     } catch (error) {
-      toast.error("An error occurred while creating the group");
+      console.error("Error creating group:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "An error occurred while creating the group"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +97,15 @@ export function CreateGroupForm({ onGroupCreated }: CreateGroupFormProps) {
               disabled={isLoading}
             />
           </div>
-          <Button type="submit" disabled={isLoading} className="w-full">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full"
+            onClick={(e) => {
+              console.log("Create Group button clicked");
+              // Form will submit via onSubmit handler
+            }}
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
