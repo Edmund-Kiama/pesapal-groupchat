@@ -3,9 +3,11 @@ import * as crypto from "node:crypto";
 import jwt from "jsonwebtoken";
 import { FRONTEND_URL, JWT_EXPIRES_IN, JWT_SECRET } from "../config/env.js";
 import sendEmail from "../utils/send-email.js";
+import { sequelize } from "../database/db.js";
 import { User, Notification } from "../models/index.js";
 
 export const signUp = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
 
   try {
     const { name, email, password } = req.body;
@@ -23,9 +25,6 @@ export const signUp = async (req, res, next) => {
         message: `Missing required field(s): ${missingFields.join(", ")}`,
       });
     }
-
-  const transaction = await sequelize.transaction();
-
 
     // Check duplicate user
     const existingUser = await User.findOne({
@@ -91,7 +90,6 @@ export const signUp = async (req, res, next) => {
         `,
       }),
     ]);
-
   } catch (error) {
     await transaction.rollback();
     console.error("SignUp Error:", error);
