@@ -45,7 +45,6 @@ export const authenticate = async (req, res, next) => {
 };
 
 export const adminOnlyAuth = async (req, res, next) => {
-  console.log(req);
   try {
     //check if user is admin
     if (req?.user?.role !== "admin") {
@@ -58,7 +57,7 @@ export const adminOnlyAuth = async (req, res, next) => {
     next();
   } catch (error) {
     res.status(401).json({
-      message: "Unauthrozied",
+      message: "Unauthorized",
       error: error.message,
     });
   }

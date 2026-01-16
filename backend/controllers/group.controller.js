@@ -10,7 +10,6 @@ export const createGroup = async (req, res, next) => {
 
     const missingFields = [];
     if (!name) missingFields.push("name");
-    if (!description) missingFields.push("description");
 
     if (missingFields.length > 0) {
       await transaction.rollback();
@@ -24,7 +23,7 @@ export const createGroup = async (req, res, next) => {
     const group = await Group.create(
       {
         name,
-        description,
+        description: description || "",
         created_by: admin.id,
       },
       { transaction }
