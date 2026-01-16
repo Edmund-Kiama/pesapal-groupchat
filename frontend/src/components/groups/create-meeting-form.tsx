@@ -76,10 +76,9 @@ export function CreateMeetingForm({
       if (currentGroupId) {
         const groupId = parseInt(currentGroupId);
         const membersResponse = await groupApi.getGroupMembers(groupId);
+        console.log(membersResponse);
         if (membersResponse.success) {
-          const members = (membersResponse.data || []).map(
-            (m: GroupMember) => m.user
-          );
+          const members = (membersResponse.data || []).map((m) => m);
           setGroupMembers(members as User[]);
         }
       }
@@ -138,6 +137,8 @@ export function CreateMeetingForm({
       setIsSubmitting(false);
     }
   };
+
+  console.log("members >>", groupMembers);
 
   if (isLoading) {
     return (

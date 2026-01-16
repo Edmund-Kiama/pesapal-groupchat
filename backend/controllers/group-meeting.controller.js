@@ -315,6 +315,7 @@ export const getGroupMeetings = async (req, res, next) => {
           include: [
             {
               model: User,
+              as: "user",
               attributes: ["id", "name", "email"],
             },
           ],
@@ -355,6 +356,7 @@ export const getGroupMeetingsById = async (req, res, next) => {
           include: [
             {
               model: User,
+              as: "user",
               attributes: ["id", "name", "email"],
             },
           ],
@@ -398,6 +400,7 @@ export const getGroupMeetingsByGroupId = async (req, res, next) => {
           include: [
             {
               model: User,
+              as: "user",
               attributes: ["id", "name", "email"],
             },
           ],

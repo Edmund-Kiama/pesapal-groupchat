@@ -1,4 +1,4 @@
-import { Group, GroupMember, GroupInvite } from "@/lib/typings/models";
+import { Group, GroupMember, GroupInvite, User } from "@/lib/typings/models";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 const API_URL =
@@ -51,7 +51,7 @@ export const groupApi = {
   // Get group members
   getGroupMembers: async (
     groupId: number
-  ): Promise<{ success: boolean; data: GroupMember[] }> => {
+  ): Promise<{ success: boolean; data: User[] }> => {
     const response = await fetch(`${API_URL}/group/${groupId}/members`, {
       method: "GET",
       headers: getAuthHeaders(),
