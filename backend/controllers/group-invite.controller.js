@@ -329,6 +329,8 @@ export const cancelGroupInvite = async (req, res, next) => {
     }
 
     // Delete the invite
+    await Notification.destroy({ where: { inviteId: invite.id }, transaction });
+   
     await invite.destroy({ transaction });
 
     await transaction.commit();

@@ -64,7 +64,7 @@ export function DeleteUserDialog({
         <div className="py-4">
           <p className="text-sm text-muted-foreground mb-4">
             Are you sure you want to delete <strong>{user?.name}</strong> (
-            {user.email})?
+            {user?.email})?
           </p>
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
