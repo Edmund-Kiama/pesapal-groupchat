@@ -41,17 +41,26 @@ export function GroupsTable() {
   const fetchGroups = async () => {
     try {
       setLoading(true);
-      let response;
+      let groupsData: any[] = [];
       if (isAdmin) {
         // Admin sees only groups they created
-        response = await membershipsApi.getGroupsByCreator(user!.id);
+        const response = await membershipsApi.getGroupsByCreator(user!.id);
+        if (response.success) {
+          groupsData = response.data || [];
+        }
       } else {
-        // Members see all groups (or can be filtered differently)
-        response = await membershipsApi.getAllGroups();
+        // Members see groups they are members of
+        const response = await membershipsApi.getUserMemberships(user!.id);
+        if (response.success) {
+          // Transform membership data to extract group info
+          groupsData =
+            (response.data || []).map((membership: any) => ({
+              ...membership.group,
+              memberCount: membership.group?.memberCount || 0,
+            })) || [];
+        }
       }
-      if (response.success) {
-        setGroups(response.data || []);
-      }
+      setGroups(groupsData);
     } catch (err: any) {
       setError(err.message || "Failed to fetch groups");
     } finally {
@@ -71,11 +80,6 @@ export function GroupsTable() {
       day: "numeric",
     });
   };
-
-  // Filter groups for non-admins to show only their created groups
-  const displayedGroups = isAdmin
-    ? groups
-    : groups.filter((g) => g.created_by === user?.id);
 
   return (
     <>
@@ -114,14 +118,14 @@ export function GroupsTable() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayedGroups.length === 0 ? (
+                  {groups.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-8">
                         No groups found
                       </TableCell>
                     </TableRow>
                   ) : (
-                    displayedGroups.map((group) => (
+                    groups.map((group) => (
                       <TableRow key={group.id}>
                         <TableCell className="font-medium">
                           #{group.id}

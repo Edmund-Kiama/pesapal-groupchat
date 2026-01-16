@@ -1,4 +1,4 @@
-import { User, GroupMember } from "../models/index.js";
+import { User, GroupMember, Group } from "../models/index.js";
 
 //get all users
 export const getUsers = async (req, res, next) => {
@@ -56,7 +56,6 @@ export const getUserById = async (req, res, next) => {
       success: true,
       data: user.toJSON(),
     });
-    
   } catch (error) {
     console.error(error);
     next(error);
@@ -78,11 +77,11 @@ export const getUserGroups = async (req, res, next) => {
           attributes: ["id", "name", "description"],
         },
       ],
-    })
+    });
 
     res.status(200).json({
       success: true,
-      data: memberships?.map(m=>m?.toJSON()),
+      data: memberships?.map((m) => m?.toJSON()),
     });
   } catch (error) {
     next(error);
@@ -124,4 +123,3 @@ export const deleteUser = async (req, res, next) => {
     next(error);
   }
 };
-
