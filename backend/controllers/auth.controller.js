@@ -70,8 +70,6 @@ export const signUp = async (req, res, next) => {
       },
     });
 
-    
-
     // Side effects (non-transactional)
     await Promise.all([
       Notification.create({
@@ -105,40 +103,35 @@ export const adminSignUp = async (req, res, next) => {
   try {
     const { name, email, password } = req.body;
 
-    const missingFields = [];
-    if (!name) missingFields.push("name");
-    if (!email) missingFields.push("email");
-    if (!password) missingFields.push("password");
-
-    if (missingFields.length > 0) {
+    // 1. Validation
+    if (!name || !email || !password) {
+      await transaction.rollback();
       return res.status(400).json({
         success: false,
-        message: `Missing required field(s): ${missingFields.join(", ")}`,
+        message: "Missing required fields",
       });
     }
 
+    // 2. Check duplicate
     const existingUser = await User.findOne({
       where: { email },
       transaction,
     });
 
     if (existingUser) {
-      const error = new Error("User already exists");
-      error.statusCode = 409;
-      throw error;
+      await transaction.rollback();
+      return res.status(409).json({
+        success: false,
+        message: "User already exists",
+      });
     }
 
-    // Hash password
+    // 3. Logic & DB Creation
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const admin = await User.create(
-      {
-        name,
-        email,
-        password: hashedPassword,
-        role: "admin",
-      },
+      { name, email, password: hashedPassword, role: "admin" },
       { transaction }
     );
 
@@ -148,37 +141,25 @@ export const adminSignUp = async (req, res, next) => {
 
     await transaction.commit();
 
-    await Promise.all([
-      Notification.create({
-        userId: admin.id,
-        type: "ADMIN_CREATION",
-        message:
-          "You have successfully signed up with Group Lending as an Admin. Happy to have you onboard!!",
-      }),
-
-      sendEmail({
-        to: email,
-        subject: "Welcome to Group Lending",
-        message:
-          "You have successfully signed up with Group Lending as an Admin. Happy to have you onboard!!",
-        html: `
-          <p>You have successfully signed up with Group Lending as an Admin.</p>
-          <p>Happy to have you onboard!!</p>
-        `,
-      }),
-    ]);
-
     res.status(201).json({
       success: true,
       message: "Admin created successfully",
-      data: {
-        token,
-        admin: admin?.toJSON(),
-      },
+      data: { token, admin: admin.toJSON() },
     });
+
+    Promise.all([
+      Notification.create({
+        userId: admin.id,
+        type: "ADMIN_CREATION",
+        message: "Welcome Admin!",
+      }),
+      sendEmail({ to: email, subject: "Welcome", html: "<p>Welcome!</p>" }),
+    ]).catch((err) => console.error("Post-signup side effects failed:", err));
   } catch (error) {
-    await transaction.rollback();
-    console.error("Error", error);
+    if (transaction && !transaction.finished) {
+     await transaction.rollback();
+   }
+   console.error("AdminSignUp Error:", error);
     next(error);
   }
 };
