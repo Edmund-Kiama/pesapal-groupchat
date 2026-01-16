@@ -1,4 +1,5 @@
 import { User, GroupMember, Group } from "../models/index.js";
+import { sequelize } from "../database/db.js";
 
 //get all users
 export const getUsers = async (req, res, next) => {
@@ -74,14 +75,53 @@ export const getUserGroups = async (req, res, next) => {
         {
           model: Group,
           as: "group",
-          attributes: ["id", "name", "description"],
+          attributes: ["id", "name", "description", "created_by", "createdAt"],
+          include: [
+            {
+              model: User,
+              as: "creator",
+              attributes: ["id", "name"],
+            },
+          ],
         },
       ],
     });
 
+    if (!memberships || memberships.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "User is not a member of any groups",
+        data: [],
+      });
+    }
+
+    // Get member counts for each group
+    const groupIds = [...new Set(memberships.map((m) => m.groupId))];
+    const memberCounts = await GroupMember.findAll({
+      where: { groupId: groupIds },
+      attributes: [
+        "groupId",
+        [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+      ],
+      group: ["groupId"],
+    });
+
+    const countMap = {};
+    memberCounts.forEach((row) => {
+      countMap[row.groupId] = row.dataValues.count;
+    });
+
+    // Enrich each membership with member count
+    const enrichedData = memberships.map((m) => {
+      const json = m.toJSON();
+      json.group = json.group || {};
+      json.group.memberCount = countMap[m.groupId] || 0;
+      return json;
+    });
+
     res.status(200).json({
       success: true,
-      data: memberships?.map((m) => m?.toJSON()),
+      data: enrichedData,
     });
   } catch (error) {
     next(error);
