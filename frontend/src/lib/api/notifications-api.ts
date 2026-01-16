@@ -1,4 +1,5 @@
 import { Notification } from "@/lib/typings/models";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 const API_URL =
   process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001/api/v1";
@@ -15,6 +16,13 @@ export interface MarkAsReadResponse {
   message?: string;
 }
 
+const getAuthHeaders = () => {
+  const token = useAuthStore.getState().token;
+  return {
+    Authorization: token ? `Bearer ${token}` : "",
+  };
+};
+
 export const notificationsApi = {
   getUserNotifications: async (
     userId: number
@@ -23,6 +31,7 @@ export const notificationsApi = {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        ...getAuthHeaders(),
       },
       credentials: "include",
     });
@@ -41,6 +50,7 @@ export const notificationsApi = {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          ...getAuthHeaders(),
         },
         credentials: "include",
       }

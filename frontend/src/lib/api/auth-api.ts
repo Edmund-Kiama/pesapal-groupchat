@@ -1,8 +1,16 @@
 import { User } from "@/lib/typings/models";
 import { Tokens } from "@/lib/typings/auth-typings";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 const API_URL =
   process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001/api/v1";
+
+const getAuthHeaders = () => {
+  const token = useAuthStore.getState().token;
+  return {
+    Authorization: token ? `Bearer ${token}` : "",
+  };
+};
 
 export interface LoginResponse {
   success: boolean;
@@ -73,12 +81,33 @@ export const authApi = {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        ...getAuthHeaders(),
       },
       credentials: "include",
     });
 
     if (!response.ok) {
       throw new Error("Failed to fetch users");
+    }
+
+    return response.json();
+  },
+
+  deleteUser: async (
+    userId: number
+  ): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_URL}/user/${userId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      },
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || "Failed to delete user");
     }
 
     return response.json();
