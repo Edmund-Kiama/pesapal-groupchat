@@ -28,6 +28,10 @@
   --card: #ffffff;
   --card-foreground: #1e293b;
 
+  /* Popover colors */
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+
   /* Border and input colors */
   --border: #e2e8f0;
   --input: #e2e8f0;

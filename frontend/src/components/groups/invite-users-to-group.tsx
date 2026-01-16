@@ -40,7 +40,7 @@ export function InviteUsersToGroup({ onInviteSent }: InviteUsersToGroupProps) {
     try {
       setIsLoading(true);
       // Fetch user's groups (groups they created)
-      const groupsResponse = await groupApi.getMyGroups();
+      const groupsResponse = await groupApi.getMyGroups(user?.id);
       if (groupsResponse.success) {
         // Filter to only show groups the user created (as admin)
         const adminGroups = (groupsResponse.data || []).filter(

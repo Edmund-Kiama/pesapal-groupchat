@@ -19,7 +19,10 @@ export function PendingMeetingInvites({
 }: PendingMeetingInvitesProps) {
   const [invites, setInvites] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [respondingId, setRespondingId] = useState<number | null>(null);
+  const [respondingInvite, setRespondingInvite] = useState<{
+    id: number;
+    action: "accepted" | "declined";
+  } | null>(null);
   const { toast } = useToast();
   const { user } = useAuthStore();
 
@@ -54,7 +57,7 @@ export function PendingMeetingInvites({
     meetingId: number,
     status: "accepted" | "declined"
   ) => {
-    setRespondingId(meetingId);
+    setRespondingInvite({ id: meetingId, action: status });
     try {
       const response = await groupMeetingApi.respondToMeetingInvite({
         meetingId,
@@ -77,7 +80,7 @@ export function PendingMeetingInvites({
     } catch (error) {
       toast.error("An error occurred while responding to invite");
     } finally {
-      setRespondingId(null);
+      setRespondingInvite(null);
     }
   };
 
@@ -187,9 +190,10 @@ export function PendingMeetingInvites({
                     variant="outline"
                     className="text-red-500 hover:text-red-600"
                     onClick={() => handleResponse(meeting.id, "declined")}
-                    disabled={respondingId === meeting.id}
+                    disabled={respondingInvite?.id === meeting.id}
                   >
-                    {respondingId === meeting.id ? (
+                    {respondingInvite?.id === meeting.id &&
+                    respondingInvite?.action === "declined" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <X className="h-4 w-4" />
@@ -199,9 +203,10 @@ export function PendingMeetingInvites({
                   <Button
                     size="sm"
                     onClick={() => handleResponse(meeting.id, "accepted")}
-                    disabled={respondingId === meeting.id}
+                    disabled={respondingInvite?.id === meeting.id}
                   >
-                    {respondingId === meeting.id ? (
+                    {respondingInvite?.id === meeting.id &&
+                    respondingInvite?.action === "accepted" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Check className="h-4 w-4" />

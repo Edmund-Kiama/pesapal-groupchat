@@ -78,7 +78,7 @@ export function Navbar({ className }: NavbarProps) {
             </span>
             <div className="h-6 w-px bg-border" />
             <NotificationBell />
-            <div className="h-px bg-border h-6 hidden sm:block" />
+            <div className=" bg-border h-6 hidden sm:block" />
             <Button variant="ghost" size="sm" onClick={handleLogout}>
               <LogOut className="h-4 w-4 mr-1" />
               <span className="hidden sm:inline">Logout</span>

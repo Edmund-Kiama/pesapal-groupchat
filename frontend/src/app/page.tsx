@@ -26,16 +26,19 @@ export default function Home() {
   const isAdmin = user?.role === UserRole.ADMIN;
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !user) {
       router.push("/login");
       return;
     }
 
     const fetchGroups = async () => {
       try {
-        const response = await groupApi.getAllGroups();
+        const response = await groupApi.getMyGroups(user.id);
         if (response.success) {
-          setGroups(response.data || []);
+          // Extract groups from memberships
+          const userGroups =
+            response.data?.map((membership: any) => membership.group) || [];
+          setGroups(userGroups);
         }
       } catch (error) {
         console.error("Failed to fetch groups:", error);
