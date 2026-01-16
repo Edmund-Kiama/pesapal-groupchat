@@ -7,12 +7,14 @@ import { Loader2 } from "lucide-react";
 
 interface GroupListProps {
   onViewGroupDetails?: (groupId: number) => void;
-  onLeaveGroup?: (groupId: number) => void;
+  onLeaveGroup?: (groupId: number, groupName: string) => void;
+  onDeleteGroup?: (groupId: number, groupName: string) => void;
 }
 
 export function GroupList({
   onViewGroupDetails,
   onLeaveGroup,
+  onDeleteGroup,
 }: GroupListProps) {
   const [memberships, setMemberships] = useState<GroupMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,9 +37,16 @@ export function GroupList({
     }
   };
 
-  const handleLeaveGroup = (groupId: number) => {
+  const handleLeaveGroup = (groupId: number, groupName: string) => {
     // Trigger the callback
-    onLeaveGroup?.(groupId);
+    onLeaveGroup?.(groupId, groupName);
+    // Refresh the list after action
+    fetchMyGroups();
+  };
+
+  const handleDeleteGroup = (groupId: number, groupName: string) => {
+    // Trigger the callback
+    onDeleteGroup?.(groupId, groupName);
     // Refresh the list after action
     fetchMyGroups();
   };
@@ -74,7 +83,12 @@ export function GroupList({
           creatorId={membership.group?.created_by}
           currentUserId={user?.id}
           onViewDetails={() => onViewGroupDetails?.(membership.groupId)}
-          onLeaveGroup={() => handleLeaveGroup(membership.groupId)}
+          onLeaveGroup={() =>
+            handleLeaveGroup(membership.groupId, membership.group?.name || "")
+          }
+          onDeleteGroup={() =>
+            handleDeleteGroup(membership.groupId, membership.group?.name || "")
+          }
         />
       ))}
     </div>

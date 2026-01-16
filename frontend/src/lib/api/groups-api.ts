@@ -79,12 +79,32 @@ export const groupApi = {
     return response.json();
   },
 
+  // Leave a group (non-creator members only)
+  leaveGroup: async (
+    groupId: number
+  ): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_URL}/group/${groupId}/leave`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    return response.json();
+  },
+
   // Add member to group (Admin only)
   addMember: async (data: { users: number[]; groupId: number }) => {
     const response = await fetch(`${API_URL}/group/add-member`, {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  // Get all users (for inviting)
+  getUsers: async (): Promise<{ success: boolean; data: any[] }> => {
+    const response = await fetch(`${API_URL}/user`, {
+      method: "GET",
+      headers: getAuthHeaders(),
     });
     return response.json();
   },
@@ -139,6 +159,17 @@ export const groupInviteApi = {
       method: "POST",
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  // Cancel a pending invite (admin only)
+  cancelInvite: async (
+    inviteId: number
+  ): Promise<{ success: boolean; message: string }> => {
+    const response = await fetch(`${API_URL}/group-invite/${inviteId}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
     });
     return response.json();
   },

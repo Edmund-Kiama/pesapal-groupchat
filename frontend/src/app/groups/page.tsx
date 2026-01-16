@@ -6,8 +6,12 @@ import { UserRole } from "@/lib/typings/models";
 import { CreateGroupForm } from "@/components/groups/create-group-form";
 import { GroupList } from "@/components/groups/group-list";
 import { PendingGroupInvites } from "@/components/groups/pending-group-invites";
+import { SentGroupInvites } from "@/components/groups/sent-group-invites";
+import { InviteUsersToGroup } from "@/components/groups/invite-users-to-group";
+import { LeaveGroupDialog } from "@/components/groups/leave-group-dialog";
+import { DeleteGroupDialog } from "@/components/groups/delete-group-dialog";
 import { Button } from "@/components/ui/button";
-import { Users, Plus } from "lucide-react";
+import { Users, Plus, Mail, UserPlus } from "lucide-react";
 import { groupApi } from "@/lib/api/groups-api";
 
 // Create tabs component since it doesn't exist
@@ -75,6 +79,12 @@ export default function GroupsPage() {
     text: string;
   }>({ type: "", text: "" });
 
+  // Dialog states
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+  const [selectedGroupName, setSelectedGroupName] = useState("");
+
   const handleGroupCreated = (groupId: number) => {
     setRefreshKey((prev) => prev + 1);
     setIsCreateGroupOpen(false);
@@ -89,34 +99,25 @@ export default function GroupsPage() {
     setTimeout(() => setActionMessage({ type: "", text: "" }), 3000);
   };
 
-  const handleLeaveOrDeleteGroup = async (groupId: number) => {
-    if (!confirm("Are you sure you want to delete this group?")) {
-      return;
-    }
+  const handleOpenLeaveDialog = (groupId: number, groupName: string) => {
+    setSelectedGroupId(groupId);
+    setSelectedGroupName(groupName);
+    setLeaveDialogOpen(true);
+  };
 
-    try {
-      const response = await groupApi.deleteGroup(groupId);
-      if (response.success) {
-        setActionMessage({
-          type: "success",
-          text: "Group deleted successfully!",
-        });
-        setRefreshKey((prev) => prev + 1);
-      } else {
-        setActionMessage({
-          type: "error",
-          text: response.message || "Failed to delete group",
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting group:", error);
-      setActionMessage({
-        type: "error",
-        text: "Failed to delete the group. You may need to leave instead.",
-      });
-    }
+  const handleOpenDeleteDialog = (groupId: number, groupName: string) => {
+    setSelectedGroupId(groupId);
+    setSelectedGroupName(groupName);
+    setDeleteDialogOpen(true);
+  };
 
-    setTimeout(() => setActionMessage({ type: "", text: "" }), 5000);
+  const handleLeaveOrDeleteSuccess = () => {
+    setRefreshKey((prev) => prev + 1);
+    setActionMessage({
+      type: "success",
+      text: selectedGroupId ? "Group action completed successfully!" : "",
+    });
+    setTimeout(() => setActionMessage({ type: "", text: "" }), 3000);
   };
 
   return (
@@ -163,6 +164,24 @@ export default function GroupsPage() {
             <Users className="h-4 w-4 mr-2" />
             My Groups
           </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger
+              value="sent-invites"
+              onClick={() => setActiveTab("sent-invites")}
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Sent Invites
+            </TabsTrigger>
+          )}
+          {isAdmin && (
+            <TabsTrigger
+              value="invite-users"
+              onClick={() => setActiveTab("invite-users")}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Invite Users
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="my-groups">
@@ -172,12 +191,37 @@ export default function GroupsPage() {
               console.log("View group:", groupId);
               // TODO: Navigate to group details page
             }}
-            onLeaveGroup={handleLeaveOrDeleteGroup}
+            onLeaveGroup={(groupId, groupName) =>
+              handleOpenLeaveDialog(groupId, groupName)
+            }
+            onDeleteGroup={(groupId, groupName) =>
+              handleOpenDeleteDialog(groupId, groupName)
+            }
           />
         </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="sent-invites">
+            <SentGroupInvites
+              onInviteCancelled={() => {
+                setRefreshKey((prev) => prev + 1);
+              }}
+            />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="invite-users">
+            <InviteUsersToGroup
+              onInviteSent={() => {
+                setRefreshKey((prev) => prev + 1);
+              }}
+            />
+          </TabsContent>
+        )}
       </Tabs>
 
-      {/* Centered Modal Overlay */}
+      {/* Centered Modal Overlay for Create Group */}
       {isCreateGroupOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Backdrop */}
@@ -194,6 +238,37 @@ export default function GroupsPage() {
           </div>
         </div>
       )}
+
+      {/* Leave Group Dialog */}
+      {selectedGroupId && (
+        <LeaveGroupDialog
+          groupId={selectedGroupId}
+          groupName={selectedGroupName}
+          isOpen={leaveDialogOpen}
+          onClose={() => {
+            setLeaveDialogOpen(false);
+            setSelectedGroupId(null);
+            setSelectedGroupName("");
+          }}
+          onSuccess={handleLeaveOrDeleteSuccess}
+        />
+      )}
+
+      {/* Delete Group Dialog */}
+      {selectedGroupId && (
+        <DeleteGroupDialog
+          groupId={selectedGroupId}
+          groupName={selectedGroupName}
+          isOpen={deleteDialogOpen}
+          onClose={() => {
+            setDeleteDialogOpen(false);
+            setSelectedGroupId(null);
+            setSelectedGroupName("");
+          }}
+          onSuccess={handleLeaveOrDeleteSuccess}
+        />
+      )}
     </div>
   );
 }
+

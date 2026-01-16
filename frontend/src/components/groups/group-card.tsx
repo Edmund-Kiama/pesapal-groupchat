@@ -10,6 +10,7 @@ interface GroupCardProps {
   currentUserId?: number;
   onViewDetails?: () => void;
   onLeaveGroup?: () => void;
+  onDeleteGroup?: () => void;
 }
 
 export function GroupCard({
@@ -20,6 +21,7 @@ export function GroupCard({
   currentUserId,
   onViewDetails,
   onLeaveGroup,
+  onDeleteGroup,
 }: GroupCardProps) {
   const isCreator = creatorId === currentUserId;
 
@@ -55,7 +57,7 @@ export function GroupCard({
             <Button
               variant="destructive"
               size="sm"
-              onClick={onLeaveGroup}
+              onClick={onDeleteGroup}
               className="text-white hover:text-white"
             >
               Delete
