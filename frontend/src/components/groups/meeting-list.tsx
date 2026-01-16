@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { groupMeetingApi } from "@/lib/api/groups-api";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { Loader2, Calendar, MapPin, Clock, Users } from "lucide-react";
+import { Loader2, Calendar, Users } from "lucide-react";
+import { MinimalMeetingCard } from "./minimal-meeting-card";
 
 interface MeetingListProps {
   groupId: number;
@@ -37,17 +38,6 @@ export function MeetingList({ groupId, onCreateMeeting }: MeetingListProps) {
     }
   };
 
-  const formatDateTime = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return date.toLocaleString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   const getUserResponseStatus = (meeting: any): string => {
     if (!user?.id) return "unknown";
     const invite = meeting.invited?.find((inv: any) => inv.userId === user.id);
@@ -70,17 +60,17 @@ export function MeetingList({ groupId, onCreateMeeting }: MeetingListProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Group Meetings
+            Meetings
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground text-center py-4">
-            No meetings scheduled for this group yet.
+            No meetings scheduled yet.
           </p>
           {isAdmin && onCreateMeeting && (
             <Button onClick={onCreateMeeting} className="mt-4 w-full">
               <Calendar className="mr-2 h-4 w-4" />
-              Schedule a Meeting
+              Schedule Meeting
             </Button>
           )}
         </CardContent>
@@ -94,110 +84,29 @@ export function MeetingList({ groupId, onCreateMeeting }: MeetingListProps) {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Group Meetings
+            Meetings
           </div>
           {isAdmin && onCreateMeeting && (
             <Button size="sm" onClick={onCreateMeeting}>
               <Calendar className="mr-1 h-4 w-4" />
-              New Meeting
+              New
             </Button>
           )}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {meetings.map((meeting) => {
-            const userStatus = getUserResponseStatus(meeting);
-            const inviteCount = meeting.invited?.length || 0;
-            const acceptedCount =
-              meeting.invited?.filter((inv: any) => inv.status === "accepted")
-                .length || 0;
-
-            return (
-              <div
-                key={meeting.id}
-                className="border rounded-lg p-4 space-y-3 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <h4 className="font-medium text-lg">
-                      {meeting.group?.name || "Group Meeting"}
-                    </h4>
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      <span>{meeting.location}</span>
-                    </div>
-                  </div>
-                  <Badge
-                    variant={
-                      userStatus === "accepted"
-                        ? "default"
-                        : userStatus === "declined"
-                        ? "destructive"
-                        : "secondary"
-                    }
-                  >
-                    {userStatus === "accepted"
-                      ? "Accepted"
-                      : userStatus === "declined"
-                      ? "Declined"
-                      : "Pending"}
-                  </Badge>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>From: {formatDateTime(meeting.time_from)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>To: {formatDateTime(meeting.time_to)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span>
-                      {acceptedCount}/{inviteCount} confirmed
-                    </span>
-                  </div>
-                </div>
-
-                {meeting.creator && (
-                  <p className="text-xs text-muted-foreground">
-                    Organized by: {meeting.creator.name}
-                  </p>
-                )}
-
-                {isAdmin && (
-                  <div className="pt-2 border-t">
-                    <p className="text-xs text-muted-foreground mb-2">
-                      Invited members:
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {meeting.invited?.map((inv: any) => (
-                        <Badge
-                          key={inv.id}
-                          variant={
-                            inv.status === "accepted"
-                              ? "default"
-                              : inv.status === "declined"
-                              ? "destructive"
-                              : "outline"
-                          }
-                          className="text-xs"
-                        >
-                          {inv.user?.name || "Unknown"}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <div className="space-y-2">
+          {meetings.map((meeting) => (
+            <MinimalMeetingCard
+              key={meeting.id}
+              meeting={{
+                ...meeting,
+                userStatus: getUserResponseStatus(meeting),
+              }}
+              isAdmin={isAdmin}
+              onInviteClick={onCreateMeeting}
+            />
+          ))}
         </div>
       </CardContent>
     </Card>
