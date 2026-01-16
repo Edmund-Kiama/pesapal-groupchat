@@ -61,7 +61,7 @@ export function CreateMeetingForm({
 
       // If no initial group, fetch user's groups
       if (!initialGroupId) {
-        const groupsResponse = await groupApi.getMyGroups();
+        const groupsResponse = await groupApi.getMyGroups(user?.id);
         if (groupsResponse.success) {
           // Filter to only show groups the user created (as admin)
           const adminGroups = (groupsResponse.data || []).filter(
