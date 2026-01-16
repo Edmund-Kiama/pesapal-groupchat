@@ -39,16 +39,12 @@ export const createGroupMeeting = async (req, res, next) => {
     if (Array.isArray(invited) && invited.length > 0) {
       invitedUsers = invited.map((id) => ({ userId: id }));
     } else {
-      // fetch all members of the group
       groupMembers = await GroupMember.findAll({
         where: { groupId },
-        include: [
-          { model: User, as: "user", attributes: ["id", "email", "name"] },
-        ],
+        include: [{ model: User, as: "user" }],
       });
-
       invitedUsers = groupMembers.map((member) => ({
-        userId: member.userId.id,
+        userId: member.userId,
       }));
     }
 
@@ -67,17 +63,17 @@ export const createGroupMeeting = async (req, res, next) => {
     // create invites
     let invites = [];
     if (invitedUsers.length > 0) {
-      invites = await Promise.all(
-        invitedUsers.map((u) =>
-          GroupMeetingInvite.create({
-            meetingId: groupMeeting.id,
-            userId: u.userId,
-            invitedBy: user.id,
-          })
-        )
-      );
+      const inviteData = invitedUsers.map((u) => ({
+        meetingId: groupMeeting.id,
+        userId: u.userId,
+        invitedBy: user.id,
+      }));
+
+      invites = await GroupMeetingInvite.bulkCreate(inviteData, {
+        transaction,
+      });
     }
-    
+
     await transaction.commit();
 
     res.status(201).json({
@@ -125,7 +121,7 @@ export const createGroupMeeting = async (req, res, next) => {
       }),
       ...groupMembers.map((member) =>
         sendEmail({
-          to: member.userId.email,
+          to: member.user.email,
           subject: "Group Meeting Invite",
           message: `${user.name} has invited you to a group meeting.`,
           html: `
