@@ -89,3 +89,39 @@ export const getUserGroups = async (req, res, next) => {
   }
 };
 
+//delete user by id
+export const deleteUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // check if user exists
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User was not found",
+      });
+    }
+
+    // prevent self-deletion
+    if (req.user && req.user.id === parseInt(userId)) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot delete your own account",
+      });
+    }
+
+    // delete user (cascade will handle related records if configured)
+    await user.destroy();
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+};
+

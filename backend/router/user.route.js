@@ -4,7 +4,9 @@ import {
   getUserById,
   getUsers,
   getUserGroups,
+  deleteUser,
 } from "../controllers/user.controller.js";
+import { adminOnlyAuth } from "../middleware/auth.middleware.js";
 
 const userRouter = Router();
 
@@ -17,6 +19,8 @@ userRouter.get("/admin", getAdmins);
 userRouter.get("/:userId", getUserById);
 //get all groups a user belongs to
 userRouter.get("/memberships/:userId", getUserGroups);
+//delete user by id (admin only)
+userRouter.delete("/:userId", adminOnlyAuth, deleteUser);
 
 export default userRouter;
  
