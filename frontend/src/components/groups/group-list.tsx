@@ -25,8 +25,12 @@ export function GroupList({
   }, [user?.id]);
 
   const fetchMyGroups = async () => {
+    if (!user?.id) {
+      setIsLoading(false);
+      return;
+    }
     try {
-      const response = await groupApi.getMyGroups();
+      const response = await groupApi.getMyGroups(user.id);
       if (response.success) {
         setMemberships(response.data || []);
       }

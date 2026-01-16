@@ -145,9 +145,9 @@ export function InviteUsersToGroup({ onInviteSent }: InviteUsersToGroupProps) {
       <CardContent>
         <form onSubmit={handleInvite} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="group-select">Select Group
+            <Label>Select Group</Label>
             <Select value={selectedGroupId} onValueChange={setSelectedGroupId}>
-              <SelectTrigger >
+              <SelectTrigger>
                 <SelectValue placeholder="Choose a group to invite to" />
               </SelectTrigger>
               <SelectContent>
@@ -167,11 +167,10 @@ export function InviteUsersToGroup({ onInviteSent }: InviteUsersToGroupProps) {
                 ))}
               </SelectContent>
             </Select>
-            </Label>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="user-select">Select User to Invite
+            <Label>Select User to Invite</Label>
             <Select
               value={selectedUserId}
               onValueChange={setSelectedUserId}
@@ -193,16 +192,15 @@ export function InviteUsersToGroup({ onInviteSent }: InviteUsersToGroupProps) {
                 ) : (
                   <div className="p-2 text-sm text-muted-foreground">
                     {selectedGroupId
-                      ? "All users are already members of this group"
+                      ? "All users are already members"
                       : "Select a group first"}
                   </div>
                 )}
               </SelectContent>
             </Select>
-            </Label>
             {selectedGroupId && availableUsers.length === 0 && (
               <p className="text-xs text-muted-foreground mt-1">
-                All available users are already members of this group
+                All users are already members of this group
               </p>
             )}
           </div>
@@ -229,3 +227,4 @@ export function InviteUsersToGroup({ onInviteSent }: InviteUsersToGroupProps) {
     </Card>
   );
 }
+

@@ -1,65 +1,47 @@
-# Group Management Implementation Plan
+# TODO - Group Meetings Feature Implementation
 
-## Backend Updates
+## Task
+Implement group meetings functionality allowing admins to create meetings with invite options (all members or specific members), and members to respond to invites.
 
-### Step 1: Add leaveGroup endpoint
-- [x] Add `leaveGroup` function in `backend/controllers/group.controller.js`
-- [x] Add route in `backend/router/group.route.js`
+## Status: COMPLETED ✓
 
-### Step 2: Add cancelInvite endpoint
-- [x] Add `cancelGroupInvite` function in `backend/controllers/group-invite.controller.js`
-- [x] Add route in `backend/router/group-invite.route.js`
+## API Layer
+- [x] 1. Add group meeting API functions to `frontend/src/lib/api/groups-api.ts`
 
-## Frontend API Updates
+## New Components
+- [x] 2. Create `create-meeting-form.tsx` - Form to create meetings with invite options
+- [x] 3. Create `pending-meeting-invites.tsx` - Component to show user's meeting invites with accept/decline
+- [x] 4. Create `meeting-list.tsx` - Component to display meetings for a group
+- [x] 5. Create `checkbox.tsx` - UI component for checkboxes
 
-### Step 3: Update groups-api.ts
-- [x] Add `getUsers` API method
-- [x] Add `leaveGroup` API method
-- [x] Add `cancelInvite` API method
+## Integration
+- [x] 6. Update `group-card.tsx` - Add "Manage Meetings" button for admins
+- [x] 7. Update `groups/page.tsx` - Add "My Meetings" tab with pending invites
+- [x] 8. Update `groups/index.ts` - Export new components
 
-## Frontend Components
+## Groups Page Tabs Fix - COMPLETED ✓
+- Fixed local custom Tabs component definitions that were shadowing imports
+- Changed `Tabs value={activeTab}` to `Tabs defaultValue="my-groups"`
+- Removed unnecessary `onClick` handlers from `TabsTrigger` components
+- Tabs now display correctly: "My Groups", "My Invitations", "My Meetings", "Sent Invites" (admin), "Invite Users" (admin)
 
-### Step 4: Create new components
-- [x] Create `leave-group-dialog.tsx` - Confirmation dialog for leaving groups
-- [x] Create `delete-group-dialog.tsx` - Confirmation dialog for deleting groups
-- [x] Create `sent-group-invites.tsx` - View invites sent by admin
-- [x] Create `received-invites.tsx` - View all received invites with filters
-- [x] Create `invite-users-to-group.tsx` - Invite users to groups you created
-- [x] Create `dialog.tsx` - Dialog UI component
+## Files Created
+- `frontend/src/components/ui/checkbox.tsx`
+- `frontend/src/components/groups/create-meeting-form.tsx`
+- `frontend/src/components/groups/pending-meeting-invites.tsx`
+- `frontend/src/components/groups/meeting-list.tsx`
 
-### Step 5: Update existing components
-- [x] Update `group-card.tsx` - Add onDeleteGroup prop, use proper handlers
-- [x] Update `group-list.tsx` - Add onDeleteGroup callback
-- [x] Update `index.ts` - Export new components
-- [x] Update `groups/page.tsx` - Add tabs for Sent Invites and Invite Users
+## Files Edited
+- `frontend/src/lib/api/groups-api.ts`
+- `frontend/src/components/groups/group-card.tsx`
+- `frontend/src/app/groups/page.tsx` - Added "My Meetings" tab
+- `frontend/src/components/groups/index.ts` - Added exports
+- `frontend/src/components/groups/create-meeting-form.tsx` - Type fixes
 
-## Progress Log
-- [x] Analyzed codebase
-- [x] Created implementation plan
-- [x] Implemented backend leaveGroup endpoint
-- [x] Implemented backend cancelInvite endpoint
-- [x] Updated frontend API
-- [x] Created new frontend components
-- [x] Updated existing frontend components
-
-## Summary of Changes
-
-### Backend Changes:
-1. `backend/controllers/group.controller.js` - Added `leaveGroup` function
-2. `backend/router/group.route.js` - Added `POST /group/:groupId/leave` route
-3. `backend/controllers/group-invite.controller.js` - Added `cancelGroupInvite` function
-4. `backend/router/group-invite.route.js` - Added `DELETE /group-invite/:inviteId` route
-
-### Frontend Changes:
-1. `frontend/src/lib/api/groups-api.ts` - Added `getUsers`, `leaveGroup`, `cancelInvite` methods
-2. `frontend/src/components/ui/dialog.tsx` - Created Dialog UI component
-3. `frontend/src/components/groups/leave-group-dialog.tsx` - Created confirmation dialog for leaving groups
-4. `frontend/src/components/groups/delete-group-dialog.tsx` - Created confirmation dialog for deleting groups
-5. `frontend/src/components/groups/sent-group-invites.tsx` - Admin can view sent invites and cancel pending ones
-6. `frontend/src/components/groups/received-invites.tsx` - Users can view all received invites with filter
-7. `frontend/src/components/groups/invite-users-to-group.tsx` - Admin can invite users to their groups
-8. `frontend/src/components/groups/group-card.tsx` - Added onDeleteGroup prop
-9. `frontend/src/components/groups/group-list.tsx` - Added onDeleteGroup callback
-10. `frontend/src/components/groups/index.ts` - Exported new components
-11. `frontend/src/app/groups/page.tsx` - Added new tabs for Sent Invites and Invite Users
+## Groups Page Tabs (Final)
+1. **My Groups** - Shows all groups user is a member of
+2. **My Invitations** - Shows pending group invites
+3. **My Meetings** - Shows pending meeting invites with accept/decline
+4. **Sent Invites** (admin only) - Shows invites sent to other users
+5. **Invite Users** (admin only) - Form to invite users to groups
 

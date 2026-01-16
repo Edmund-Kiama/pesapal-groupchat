@@ -11,6 +11,7 @@ interface GroupCardProps {
   onViewDetails?: () => void;
   onLeaveGroup?: () => void;
   onDeleteGroup?: () => void;
+  onManageMeetings?: () => void;
 }
 
 export function GroupCard({
@@ -22,6 +23,7 @@ export function GroupCard({
   onViewDetails,
   onLeaveGroup,
   onDeleteGroup,
+  onManageMeetings,
 }: GroupCardProps) {
   const isCreator = creatorId === currentUserId;
 
@@ -44,15 +46,16 @@ export function GroupCard({
             <span>{memberCount} members</span>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onViewDetails}
-            className="flex-1"
-          >
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={onViewDetails}>
             View Details
           </Button>
+          {isCreator && onManageMeetings && (
+            <Button variant="default" size="sm" onClick={onManageMeetings}>
+              <Calendar className="mr-1 h-4 w-4" />
+              Meetings
+            </Button>
+          )}
           {isCreator ? (
             <Button
               variant="destructive"

@@ -65,15 +65,26 @@ export const createGroupMeeting = async (req, res, next) => {
     );
 
     // create invites
-    const invites = await Promise.all(
-      invitedUsers.map((u) =>
-        GroupMeetingInvite.create({
-          meetingId: groupMeeting.id,
-          userId: u.userId,
-          invitedBy: user.id,
-        })
-      )
-    );
+    let invites = [];
+
+    if (invited.length > 0) {
+      invites = await Promise.all(
+        invitedUsers.map((u) =>
+          GroupMeetingInvite.create({
+            meetingId: groupMeeting.id,
+            userId: u.userId,
+            invitedBy: user.id,
+          })
+        )
+      );
+    } else {
+      return res.status(201).json({
+        success: true,
+        message: "No invites were sent. You need group members.",
+        data: groupMeeting?.toJSON(),
+      });
+    }
+    
     await transaction.commit();
 
     res.status(201).json({

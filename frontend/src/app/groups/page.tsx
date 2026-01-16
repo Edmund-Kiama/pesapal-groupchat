@@ -6,72 +6,19 @@ import { UserRole } from "@/lib/typings/models";
 import { CreateGroupForm } from "@/components/groups/create-group-form";
 import { GroupList } from "@/components/groups/group-list";
 import { PendingGroupInvites } from "@/components/groups/pending-group-invites";
+import { PendingMeetingInvites } from "@/components/groups/pending-meeting-invites";
+import { CreateMeetingForm } from "@/components/groups/create-meeting-form";
 import { SentGroupInvites } from "@/components/groups/sent-group-invites";
 import { InviteUsersToGroup } from "@/components/groups/invite-users-to-group";
 import { LeaveGroupDialog } from "@/components/groups/leave-group-dialog";
 import { DeleteGroupDialog } from "@/components/groups/delete-group-dialog";
 import { Button } from "@/components/ui/button";
-import { Users, Plus, Mail, UserPlus } from "lucide-react";
-import { groupApi } from "@/lib/api/groups-api";
-
-// Create tabs component since it doesn't exist
-function Tabs({
-  children,
-  value,
-}: {
-  children: React.ReactNode;
-  value: string;
-}) {
-  return (
-    <div data-tabs-value={value}>
-      {Array.isArray(children)
-        ? children.map((child: any) => {
-            if (child?.props?.value === value) return child;
-            return null;
-          })
-        : children}
-    </div>
-  );
-}
-
-function TabsList({ children }: { children: React.ReactNode }) {
-  return <div className="flex border-b">{children}</div>;
-}
-
-function TabsTrigger({
-  value,
-  onClick,
-  children,
-}: {
-  value: string;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-4 py-2 text-sm font-medium border-b-2 border-transparent hover:border-gray-300"
-      data-tab-trigger={value}
-    >
-      {children}
-    </button>
-  );
-}
-
-function TabsContent({
-  value,
-  children,
-}: {
-  value: string;
-  children: React.ReactNode;
-}) {
-  return <div data-tab-content={value}>{children}</div>;
-}
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Users, Plus, Mail, UserPlus, Bell, Calendar } from "lucide-react";
 
 export default function GroupsPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.role === UserRole.ADMIN;
-  const [activeTab, setActiveTab] = useState("my-groups");
   const [refreshKey, setRefreshKey] = useState(0);
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [actionMessage, setActionMessage] = useState<{
@@ -84,6 +31,7 @@ export default function GroupsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [selectedGroupName, setSelectedGroupName] = useState("");
+  const [isCreateMeetingOpen, setIsCreateMeetingOpen] = useState(false);
 
   const handleGroupCreated = (groupId: number) => {
     setRefreshKey((prev) => prev + 1);
@@ -124,15 +72,26 @@ export default function GroupsPage() {
     <div className="container mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">Groups</h1>
-        {isAdmin && (
-          <Button
-            onClick={() => setIsCreateGroupOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Create Group
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {isAdmin && (
+            <Button
+              onClick={() => setIsCreateMeetingOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Calendar className="h-4 w-4" />
+              Create Group Meeting
+            </Button>
+          )}
+          {isAdmin && (
+            <Button
+              onClick={() => setIsCreateGroupOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Group
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Action message */}
@@ -150,34 +109,28 @@ export default function GroupsPage() {
         </div>
       )}
 
-      {/* Pending Invites - Visible to all users */}
-      <div className="mb-8">
-        <PendingGroupInvites onInviteAccepted={handleInviteAccepted} />
-      </div>
-
-      <Tabs value={activeTab}>
-        <TabsList>
-          <TabsTrigger
-            value="my-groups"
-            onClick={() => setActiveTab("my-groups")}
-          >
+      <Tabs defaultValue="my-groups">
+        <TabsList className="mb-4">
+          <TabsTrigger value="my-groups">
             <Users className="h-4 w-4 mr-2" />
             My Groups
           </TabsTrigger>
+          <TabsTrigger value="my-invitations">
+            <Bell className="h-4 w-4 mr-2" />
+            My Invitations
+          </TabsTrigger>
+          <TabsTrigger value="my-meetings">
+            <Calendar className="h-4 w-4 mr-2" />
+            My Meetings
+          </TabsTrigger>
           {isAdmin && (
-            <TabsTrigger
-              value="sent-invites"
-              onClick={() => setActiveTab("sent-invites")}
-            >
+            <TabsTrigger value="sent-invites">
               <Mail className="h-4 w-4 mr-2" />
               Sent Invites
             </TabsTrigger>
           )}
           {isAdmin && (
-            <TabsTrigger
-              value="invite-users"
-              onClick={() => setActiveTab("invite-users")}
-            >
+            <TabsTrigger value="invite-users">
               <UserPlus className="h-4 w-4 mr-2" />
               Invite Users
             </TabsTrigger>
@@ -198,6 +151,14 @@ export default function GroupsPage() {
               handleOpenDeleteDialog(groupId, groupName)
             }
           />
+        </TabsContent>
+
+        <TabsContent value="my-invitations">
+          <PendingGroupInvites onInviteAccepted={handleInviteAccepted} />
+        </TabsContent>
+
+        <TabsContent value="my-meetings">
+          <PendingMeetingInvites />
         </TabsContent>
 
         {isAdmin && (
@@ -234,6 +195,35 @@ export default function GroupsPage() {
             <CreateGroupForm
               onGroupCreated={handleGroupCreated}
               onCancel={() => setIsCreateGroupOpen(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Centered Modal Overlay for Create Meeting */}
+      {isCreateMeetingOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsCreateMeetingOpen(false)}
+          />
+          {/* Modal Content */}
+          <div className="relative z-10 w-full max-w-md mx-4">
+            <CreateMeetingForm
+              onMeetingCreated={() => {
+                setRefreshKey((prev) => prev + 1);
+                setIsCreateMeetingOpen(false);
+                setActionMessage({
+                  type: "success",
+                  text: "Meeting created successfully!",
+                });
+                setTimeout(
+                  () => setActionMessage({ type: "", text: "" }),
+                  3000
+                );
+              }}
+              onCancel={() => setIsCreateMeetingOpen(false)}
             />
           </div>
         </div>

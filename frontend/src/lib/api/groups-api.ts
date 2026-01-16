@@ -60,8 +60,10 @@ export const groupApi = {
   },
 
   // Get user's groups (through GroupMember)
-  getMyGroups: async (): Promise<{ success: boolean; data: GroupMember[] }> => {
-    const response = await fetch(`${API_URL}/group/memberships`, {
+  getMyGroups: async (
+    userId: number
+  ): Promise<{ success: boolean; data: GroupMember[] }> => {
+    const response = await fetch(`${API_URL}/group/user/${userId}/groups`, {
       method: "GET",
       headers: getAuthHeaders(),
     });
@@ -170,6 +172,74 @@ export const groupInviteApi = {
     const response = await fetch(`${API_URL}/group-invite/${inviteId}`, {
       method: "DELETE",
       headers: getAuthHeaders(),
+    });
+    return response.json();
+  },
+};
+
+// ============================================
+// Group Meeting API
+// ============================================
+
+export const groupMeetingApi = {
+  // Create a new group meeting (Admin only)
+  createMeeting: async (data: {
+    location: string;
+    time: { from: string; to: string };
+    groupId: number;
+    invited?: number[]; // Array of user IDs - if empty, invites all members
+  }) => {
+    const response = await fetch(`${API_URL}/group-meeting`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  // Get all meetings
+  getMeetings: async (): Promise<{ success: boolean; data: any[] }> => {
+    const response = await fetch(`${API_URL}/group-meeting`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    return response.json();
+  },
+
+  // Get meeting by ID
+  getMeetingById: async (
+    meetingId: number
+  ): Promise<{ success: boolean; data: any }> => {
+    const response = await fetch(`${API_URL}/group-meeting/${meetingId}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    return response.json();
+  },
+
+  // Get meetings by group ID
+  getMeetingsByGroupId: async (
+    groupId: number
+  ): Promise<{ success: boolean; data: any[] }> => {
+    const response = await fetch(
+      `${API_URL}/group-meeting/group/${groupId}`,
+      {
+        method: "GET",
+        headers: getAuthHeaders(),
+      }
+    );
+    return response.json();
+  },
+
+  // Respond to meeting invite (accept/decline)
+  respondToMeetingInvite: async (data: {
+    meetingId: number;
+    status: "accepted" | "declined";
+  }) => {
+    const response = await fetch(`${API_URL}/group-meeting/response`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
     });
     return response.json();
   },
