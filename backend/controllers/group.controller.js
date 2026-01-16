@@ -521,3 +521,155 @@ export const leaveGroup = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get groups created by a specific user (by creatorId)
+export const getGroupsByCreator = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // Fetch groups where created_by matches
+    const groups = await Group.findAll({
+      where: { created_by: userId },
+      include: [
+        {
+          model: User,
+          as: "creator",
+          attributes: ["id", "name"],
+        },
+      ],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: groups.map((g) => g.toJSON()),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get memberships for groups created by a specific user
+export const getMembershipsByCreator = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // First, get all groups created by this user
+    const createdGroups = await Group.findAll({
+      where: { created_by: userId },
+      attributes: ["id"],
+    });
+
+    if (createdGroups.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No groups found created by this user",
+        data: [],
+      });
+    }
+
+    const createdGroupIds = createdGroups.map((g) => g.id);
+
+    // Get memberships for these groups
+    const members = await GroupMember.findAll({
+      where: { groupId: createdGroupIds },
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name", "email", "role"],
+        },
+        {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name", "description", "created_by"],
+        },
+      ],
+    });
+
+    // Get member counts for each group
+    const groupIds = [...new Set(members.map((m) => m.groupId))];
+    const memberCounts = await GroupMember.findAll({
+      where: { groupId: groupIds },
+      attributes: [
+        "groupId",
+        [sequelize.fn("COUNT", sequelize.col("id")), "count"],
+      ],
+      group: ["groupId"],
+    });
+
+    const countMap = {};
+    memberCounts.forEach((row) => {
+      countMap[row.groupId] = row.dataValues.count;
+    });
+
+    // Enrich each membership with member count
+    const enrichedData = members.map((m) => {
+      const json = m.toJSON();
+      json.group = json.group || {};
+      json.group.memberCount = countMap[m.groupId] || 0;
+      return json;
+    });
+
+    res.status(200).json({
+      success: true,
+      data: enrichedData,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Remove a member from a group (admin/creator only)
+export const removeMember = async (req, res, next) => {
+  const transaction = await sequelize.transaction();
+  try {
+    const { groupId, userId: memberUserId } = req.params;
+    const adminId = req.user?.id;
+
+    // Fetch the group
+    const group = await Group.findByPk(groupId);
+    if (!group) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Group not found",
+      });
+    }
+
+    // Check if the requester is the group creator
+    if (group.created_by !== adminId) {
+      await transaction.rollback();
+      return res.status(403).json({
+        success: false,
+        message: "Only the group creator can remove members",
+      });
+    }
+
+    // Find the membership
+    const membership = await GroupMember.findOne({
+      where: { userId: memberUserId, groupId },
+    });
+
+    if (!membership) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Member not found in this group",
+      });
+    }
+
+    // Delete the membership
+    await membership.destroy({ transaction });
+
+    await transaction.commit();
+
+    res.status(200).json({
+      success: true,
+      message: "Member removed successfully",
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.error("RemoveMember Error:", error);
+    next(error);
+  }
+};

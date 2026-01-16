@@ -3,7 +3,9 @@ import {
   createGroupMeeting,
   getGroupMeetings,
   getGroupMeetingsById,
-  getGroupMeetingsByGroupId,groupMeetingResponse
+  getGroupMeetingsByGroupId,
+  groupMeetingResponse,
+  getGroupMeetingsByCreator,
 } from "../controllers/group-meeting.controller.js";
 import { adminOnlyAuth } from "../middleware/auth.middleware.js";
 
@@ -13,6 +15,8 @@ const groupMeetingRouter = Router();
 groupMeetingRouter.post("/", adminOnlyAuth, createGroupMeeting);
 groupMeetingRouter.post("/response", groupMeetingResponse);
 groupMeetingRouter.get("/", getGroupMeetings);
+// Get meetings for groups created by a specific user
+groupMeetingRouter.get("/creator/:userId", getGroupMeetingsByCreator);
 groupMeetingRouter.get("/:meetingId", getGroupMeetingsById);
 groupMeetingRouter.get("/group/groupId", getGroupMeetingsByGroupId);
 

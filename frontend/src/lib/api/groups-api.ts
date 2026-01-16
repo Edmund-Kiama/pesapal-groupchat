@@ -206,6 +206,17 @@ export const groupMeetingApi = {
     return response.json();
   },
 
+  // Get meetings for groups created by a specific user
+  getMeetingsByCreator: async (
+    userId: number
+  ): Promise<{ success: boolean; data: any[] }> => {
+    const response = await fetch(`${API_URL}/group-meeting/creator/${userId}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+    return response.json();
+  },
+
   // Get meeting by ID
   getMeetingById: async (
     meetingId: number
@@ -221,13 +232,10 @@ export const groupMeetingApi = {
   getMeetingsByGroupId: async (
     groupId: number
   ): Promise<{ success: boolean; data: any[] }> => {
-    const response = await fetch(
-      `${API_URL}/group-meeting/group/${groupId}`,
-      {
-        method: "GET",
-        headers: getAuthHeaders(),
-      }
-    );
+    const response = await fetch(`${API_URL}/group-meeting/group/${groupId}`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
     return response.json();
   },
 

@@ -415,3 +415,62 @@ export const getGroupMeetingsByGroupId = async (req, res, next) => {
     next(error);
   }
 };
+
+// Get meetings for groups created by a specific user
+export const getGroupMeetingsByCreator = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // First, get all groups created by this user
+    const createdGroups = await Group.findAll({
+      where: { created_by: userId },
+      attributes: ["id"],
+    });
+
+    if (createdGroups.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: "No groups found created by this user",
+        data: [],
+      });
+    }
+
+    const createdGroupIds = createdGroups.map((g) => g.id);
+
+    // Get meetings for these groups
+    const meetings = await GroupMeeting.findAll({
+      where: { groupId: createdGroupIds },
+      include: [
+        {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name", "description"],
+        },
+        {
+          model: User,
+          as: "creator",
+          attributes: ["id", "name"],
+        },
+        {
+          model: GroupMeetingInvite,
+          as: "invited",
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: ["id", "name", "email"],
+            },
+          ],
+        },
+      ],
+    });
+
+    res.status(200).json({
+      success: true,
+      data: meetings?.map((m) => m?.toJSON()),
+    });
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
+};
