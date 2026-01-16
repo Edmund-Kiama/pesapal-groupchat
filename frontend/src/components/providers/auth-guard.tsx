@@ -3,18 +3,25 @@
 import { useUserContext } from "@/lib/context/user-context";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // Public routes that don't require authentication
-const publicRoutes = ["/", "/login", "/signup", "/register"];
+const publicRoutes = ["/login", "/signup", "/register"];
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { tokens } = useUserContext();
   const { isAuthenticated } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
     // Allow access to public routes
     if (publicRoutes.includes(pathname)) {
       return;
@@ -26,11 +33,16 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!hasAuth) {
       router.replace("/login");
     }
-  }, [tokens, isAuthenticated, pathname, router]);
+  }, [mounted, tokens, isAuthenticated, pathname, router]);
 
   // Allow access to public routes
   if (publicRoutes.includes(pathname)) {
     return <>{children}</>;
+  }
+
+  // Before hydration, don't render anything to avoid flash
+  if (!mounted) {
+    return null;
   }
 
   // Check both auth stores for compatibility
