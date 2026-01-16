@@ -70,6 +70,8 @@ export const signUp = async (req, res, next) => {
       },
     });
 
+    
+
     // Side effects (non-transactional)
     await Promise.all([
       Notification.create({
