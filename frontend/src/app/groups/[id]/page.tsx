@@ -7,9 +7,11 @@ import { Group } from "@/lib/typings/models";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { ChatWindow } from "@/components/groups/chat";
 import { MeetingList } from "@/components/groups/meeting-list";
+import { CreateMeetingForm } from "@/components/groups/create-meeting-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Loader2, ArrowLeft, Users, Calendar, Clock, User } from "lucide-react";
 
 export default function GroupDetailPage() {
@@ -21,6 +23,8 @@ export default function GroupDetailPage() {
   const [group, setGroup] = useState<Group | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCreateMeetingOpen, setIsCreateMeetingOpen] = useState(false);
+  const [meetingListKey, setMeetingListKey] = useState(0);
 
   useEffect(() => {
     if (groupId) {
@@ -159,12 +163,12 @@ export default function GroupDetailPage() {
 
           {/* Meetings Card */}
           <MeetingList
+            key={meetingListKey}
             groupId={groupId}
             onCreateMeeting={
               isCreator
                 ? () => {
-                    // Could open a modal or navigate to create meeting
-                    console.log("Create meeting for group:", groupId);
+                    setIsCreateMeetingOpen(true);
                   }
                 : undefined
             }
@@ -186,6 +190,20 @@ export default function GroupDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Create Meeting Dialog */}
+      <Dialog open={isCreateMeetingOpen} onOpenChange={setIsCreateMeetingOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <CreateMeetingForm
+            groupId={groupId}
+            onMeetingCreated={() => {
+              setIsCreateMeetingOpen(false);
+              setMeetingListKey((prev) => prev + 1);
+            }}
+            onCancel={() => setIsCreateMeetingOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

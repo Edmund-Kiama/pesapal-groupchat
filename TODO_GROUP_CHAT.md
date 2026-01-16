@@ -31,3 +31,9 @@
 - [ ] 6.2 Test navigation flow
 - [ ] 6.3 Fix any UI issues
 
+## Phase 7: Meeting Scheduling in Group Chat
+- [x] 7.1 Add create meeting dialog to group detail page
+- [x] 7.2 Connect MeetingList onCreateMeeting to open the dialog
+- [x] 7.3 Pass groupId to CreateMeetingForm
+- [x] 7.4 Refresh meeting list after creating a meeting
+

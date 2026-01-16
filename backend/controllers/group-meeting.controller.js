@@ -381,6 +381,11 @@ export const getGroupMeetingsByGroupId = async (req, res, next) => {
       where: { groupId },
       include: [
         {
+          model: Group,
+          as: "group",
+          attributes: ["id", "name", "description"],
+        },
+        {
           model: User,
           as: "creator",
           attributes: ["id", "name"],
@@ -397,18 +402,12 @@ export const getGroupMeetingsByGroupId = async (req, res, next) => {
           ],
         },
       ],
+      order: [["time_from", "ASC"]],
     });
-
-    if (!meetings || meetings.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: "No meetings found for this group",
-      });
-    }
 
     res.status(200).json({
       success: true,
-      data: meetings?.map((m) => m?.toJSON()),
+      data: meetings?.map((m) => m?.toJSON()) || [],
     });
   } catch (error) {
     console.error(error);
