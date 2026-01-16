@@ -42,7 +42,9 @@ export const createGroupMeeting = async (req, res, next) => {
       // fetch all members of the group
       groupMembers = await GroupMember.findAll({
         where: { groupId },
-        include: [{ model: User, attributes: ["id", "email", "name"] }],
+        include: [
+          { model: User, as: "user", attributes: ["id", "email", "name"] },
+        ],
       });
 
       invitedUsers = groupMembers.map((member) => ({
