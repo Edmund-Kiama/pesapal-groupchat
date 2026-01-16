@@ -180,7 +180,7 @@ export const groupMeetingResponse = async (req, res, next) => {
       where: { meetingId, userId: user.id },
       include: [
         {
-          model: GroupMeeting,
+          model: GroupMeeting, as: "meeting",
           include: [
             {
               model: User,
