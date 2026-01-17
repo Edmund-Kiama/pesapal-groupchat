@@ -35,6 +35,61 @@ The Group Lending Platform is a comprehensive solution for managing group-based 
 
 ---
 
+## Usage
+
+### Using the Deployed App
+
+The frontend application is deployed and accessible at:
+
+**Live Demo:** [https://pesapal-groupchat.vercel.app](https://pesapal-groupchat.vercel.app)
+
+Simply open the link in your browser to access the Group Lending Platform. The deployed app connects to the backend API at [https://pesapal-groupchat-production.up.railway.app](https://pesapal-groupchat-production.up.railway.app).
+
+### Running Locally
+
+To run the frontend locally on your machine:
+
+#### Prerequisites
+
+- **Node.js** (v16 or higher)
+- **npm**, **yarn**, or **pnpm**
+- A running backend server (default: `http://localhost:3001`)
+
+#### Installation
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   # or
+   pnpm install
+   ```
+
+3. Create a `.env` file in the `frontend` directory:
+   ```env
+   # Backend Server URL (required for API calls)
+   # For local development: use localhost
+   NEXT_PUBLIC_SERVER_URL=http://localhost:3001/api/v1
+   
+   # For production: use the deployed backend API
+   # NEXT_PUBLIC_SERVER_URL=https://pesapal-groupchat-production.up.railway.app/api/v1
+   ```
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+5. Open your browser and navigate to [http://localhost:3000](http://localhost:3000)
+
+---
+
 ## Frontend-Backend Architecture
 
 ### System Architecture Diagram

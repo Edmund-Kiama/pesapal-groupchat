@@ -15,17 +15,30 @@ import groupInviteRouter from "./router/group-invite.route.js";
 import groupMeetingRouter from "./router/group-meeting.route.js";
 import notificationRouter from "./router/notification.route.js";
 import { connectDB } from "./database/connect-db.js";
-import { PORT } from "./config/env.js";
+import { FRONTEND_URL, PORT } from "./config/env.js";
 
 const app = express();
 
 // CORS configuration
+const allowedOrigins = [
+  FRONTEND_URL,
+  "https://pesapal-groupchat.vercel.app",
+  "http://localhost:3000",
+].filter((origin) => origin);
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "https://pesapal-groupchat.vercel.app" || "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -57,8 +70,8 @@ async function startServer() {
   try {
     await connectDB();
 
-    app.listen(PORT , () => {
-      console.log("🚀 Server running on port ", PORT);
+    app.listen(PORT || 3001, () => {
+      console.log("🚀 Server running on port ", PORT || 3001);
     });
   } catch (error) {
     console.error("🚫 Server startup aborted (DB failed)");

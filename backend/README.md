@@ -17,7 +17,7 @@ The backend is deployed on **Railway** with the following configuration:
 
 1. Push your code to a Git repository (GitHub, GitLab, or Bitbucket)
 2. Import the project in Railway
-3. Configure environment variables:
+3. Create and configure environment variables in **.env.development.local**:
    - `DATABASE_URL`: Your PostgreSQL connection string
    - `JWT_SECRET`: Your JWT secret key
    - `JWT_EXPIRES_IN`: Token expiration (e.g., 7d)
@@ -49,8 +49,71 @@ app.use(cors({
   ],
   credentials: true,
 }));
-```
 
+
+---
+
+## Usage
+
+### Using the Deployed API
+
+The backend API is deployed and accessible at:
+
+**Base URL:** [https://pesapal-groupchat-production.up.railway.app](https://pesapal-groupchat-production.up.railway.app)
+
+All API endpoints are prefixed with this base URL. For example:
+- `GET https://pesapal-groupchat-production.up.railway.app/api/v1/users`
+- `POST https://pesapal-groupchat-production.up.railway.app/api/v1/auth/login`
+
+### Running Locally
+
+To run the backend locally on your machine:
+
+#### Prerequisites
+
+- **Node.js** (v18 or higher)
+- **PostgreSQL** (v14 or higher)
+- **npm** or **yarn**
+
+#### Installation
+
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env.development.local` file in the `backend` directory with the following variables:
+   ```env
+   DATABASE_URL=postgresql://username:password@localhost:5432/dbname
+   JWT_SECRET=your-jwt-secret-key
+   JWT_EXPIRES_IN=7d
+   EMAIL_USER=your-email@gmail.com
+   EMAIL_PASS=your-email-password
+   PORT=3001
+   ```
+
+4. Set up the database:
+   ```bash
+   # Run migrations to create tables
+   npx sequelize-cli db:migrate
+
+   # (Optional) Seed initial data
+   npx sequelize-cli db:seed:all
+   ```
+
+5. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+The server will run at `http://localhost:3001`.
+
+---
 
 # Database Schema: Voting & Group Management System
 

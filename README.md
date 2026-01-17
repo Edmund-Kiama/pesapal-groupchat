@@ -83,6 +83,102 @@ A **Node.js + Express** application that handles API requests, authentication, b
 
 ## Usage
 
+### Using the Deployed App
+
+The application is fully deployed and accessible online:
+
+- **Frontend:** [https://pesapal-groupchat.vercel.app](https://pesapal-groupchat.vercel.app) (Vercel)
+- **Backend API:** [https://pesapal-groupchat-production.up.railway.app](https://pesapal-groupchat-production.up.railway.app) (Railway)
+
+Simply open the frontend link in your browser to start using the platform. The deployed app is connected to the live backend API.
+
+### Running Locally
+
+To run the application locally on your machine:
+
+#### Prerequisites
+
+- **Node.js** (v18 or higher)
+- **PostgreSQL** (v14 or higher)
+- **npm**, **yarn**, or **pnpm**
+
+#### Backend Setup
+
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env.development.local` file in the `backend` directory with the following variables:
+   ```env
+   DATABASE_URL=postgresql://username:password@localhost:5432/dbname
+   JWT_SECRET=your-jwt-secret-key
+   JWT_EXPIRES_IN=7d
+   EMAIL_USER=your-email@gmail.com
+   EMAIL_PASS=your-email-password
+   PORT=3001
+   ```
+
+4. Set up the database:
+   ```bash
+   # Run migrations to create tables
+   npx sequelize-cli db:migrate
+
+   # (Optional) Seed initial data
+   npx sequelize-cli db:seed:all
+   ```
+
+5. Start the backend server:
+   ```bash
+   npm run dev
+   # or
+   node app.js
+   ```
+
+The backend will run at `http://localhost:3001`.
+
+#### Frontend Setup
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   # or
+   yarn install
+   # or
+   pnpm install
+   ```
+
+3. Create a `.env` file in the `frontend` directory:
+   ```env
+   # Backend Server URL (required for API calls)
+   # For local development: use localhost
+   NEXT_PUBLIC_SERVER_URL=http://localhost:3001/api/v1
+   
+   # For production: use the deployed backend API
+   # NEXT_PUBLIC_SERVER_URL=https://pesapal-groupchat-production.up.railway.app/api/v1
+   ```
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+5. Open your browser and navigate to [http://localhost:3000](http://localhost:3000)
+
+---
+
+## Features
+
 ### Getting Started
 
 1. **Sign Up for an Account**
