@@ -1,8 +1,20 @@
-# Group Lending Platform
+****# Group Lending Platform
 
-A modern, full-featured group lending and management platform built with **Next.js 16** (TypeScript) for the frontend and **Node.js** with **PostgreSQL** for the backend. This platform enables groups to manage elections, voting, meetings, and real-time group chat functionality.
+A modern, full-featured group management platform built with **Next.js 16** (TypeScript) for the frontend and **Node.js** with **PostgreSQL** for the backend. This platform enables groups to manage meetings, send invitations, and communicate through real-time group chat functionality.
 
 **Live Demo**: [https://pesapal-groupchat.vercel.app](https://pesapal-groupchat.vercel.app)
+
+### Demo Accounts
+
+| Email | Name | Role | Password |
+|-------|------|------|----------|
+| admin@grouplending.com | Admin User | admin | Password123 |
+| john@example.com | John Doe | member | Password123 |
+| jane@example.com | Jane Smith | member | Password123 |
+| bob@example.com | Bob Johnson | member | Password123 |
+| alice@example.com | Alice Williams | member | Password123 |
+| charlie@example.com | Charlie Brown | member | Password123 |
+
 
 ---
 
@@ -23,7 +35,9 @@ A modern, full-featured group lending and management platform built with **Next.
 
 ## Project Overview
 
-The Group Lending Platform is a comprehensive solution for managing group-based organizations, elections, and decision-making processes. The system consists of two main components:
+The Group Lending Platform is a comprehensive solution for managing group-based organizations and facilitating collaborative decision-making. While the backend fully supports password resets and an election and voting system, the frontend implementation for these features is pending future development.
+
+The system consists of two main components:
 
 ### Frontend
 A **Next.js 16** application that provides a responsive, modern user interface for interacting with the backend PostgreSQL database.
@@ -65,6 +79,93 @@ A **Node.js + Express** application that handles API requests, authentication, b
 
 ---
 
+## Usage
+
+### Getting Started
+
+1. **Sign Up for an Account**
+   - Navigate to the signup page
+   - Enter your name, **real email address** (in order to receive notification emails), and password
+   - Click "Create Account" to register as a regular member
+   - **Note:** If you provide a real email address, you will receive email notifications from the app (e.g., password reset emails, group invitations, meeting reminders, and other important updates)
+
+2. **Log In**
+   - Use your registered email and password
+   - JWT tokens persist for 7 days for convenient access
+
+### Group Management
+
+**Creating a Group (Admin Only):**
+- Click "Create Group" on the dashboard
+- Enter a group name and optional description
+- Submit to create the group (you become the group creator)
+
+**Joining a Group:**
+- Browse available groups on the Groups page
+- Request to join or wait for an admin invitation
+- Once accepted, you'll see the group in your groups list
+
+**Leaving a Group:**
+- Open the group details page
+- Click "Leave Group" (not available for group creators)
+
+### Meeting Scheduling
+
+**Creating a Meeting (Admin Only):**
+- Navigate to a group page
+- Click "Schedule Meeting"
+- Set the meeting date, time, and location
+- Select members to invite or invite all group members
+- Send invitations
+
+**Responding to Meeting Invites:**
+- Check your notifications or pending meeting invites
+- Accept or decline each invitation
+- View accepted meetings in your meetings list
+
+### Group Chat
+
+**Sending Messages:**
+- Open any group you're a member of
+- Type a message in the chat input
+- Press Enter or click Send
+- Messages appear in real-time for all group members
+
+**Viewing Message History:**
+- All messages are stored per group
+- Scroll up to view previous conversations
+
+### Managing Invitations
+
+**Sending Group Invites (Admin Only):**
+- Go to a group's management page
+- Click "Invite Users"
+- Enter the email addresses of users to invite
+- Send invitations
+
+**Responding to Invites:**
+- Check your notifications or "Received Invites" section
+- Accept or decline each invitation
+- Accepted invites add you to the group immediately
+
+### Admin Features
+
+**User Management:**
+- Admins can view all registered users
+- Delete user accounts if needed
+- Create new admin accounts
+
+**Group Administration:**
+- Create new groups
+- Add or remove group members
+- Delete existing groups
+
+**Invitation Management:**
+- Send invitations to any user
+- Cancel pending invitations before they're accepted
+
+---
+
 ## Features
 
 ### User Features
@@ -72,8 +173,9 @@ A **Node.js + Express** application that handles API requests, authentication, b
 1. **Authentication**
    - Secure signup and login with email/password
    - JWT-based session management with 7-day expiration
-   - Password reset via email
+   - Password reset via email (sends reset link to user's email)
    - Role-based access control (Admin/Member)
+   - Email notifications for important account events
 
 2. **Group Management**
    - Create and join groups
@@ -88,15 +190,17 @@ A **Node.js + Express** application that handles API requests, authentication, b
 
 4. **Meeting Scheduling**
    - Create meetings with date/time and location
-   - Invite specific users or all group members
+   - Invite specific users or all group members via email
    - Accept/decline meeting invitations
    - View meeting history and upcoming meetings
+   - Email notifications for meeting invitations and reminders
 
 5. **Invitations**
-   - Send group invitations to users
+   - Send group invitations to users via email
    - Accept/decline pending invitations
    - View sent and received invitations
    - Cancel pending invitations (admin)
+   - Email notifications for received invitations
 
 6. **Notifications**
    - Real-time notifications for:
@@ -105,6 +209,7 @@ A **Node.js + Express** application that handles API requests, authentication, b
      - Election announcements
      - Candidate nominations
    - Mark as read functionality
+   - Email notifications for important updates
 
 ### Admin Features
 
@@ -121,15 +226,6 @@ A **Node.js + Express** application that handles API requests, authentication, b
 3. **Invitation Management**
    - Send invitations to users
    - Cancel pending invitations
-
-### Election & Voting System
-
-- Create elections with date ranges
-- Define positions within elections
-- Nominate candidates for positions
-- Grant voting rights to eligible members
-- Cast votes for candidates
-- Track voting status per user/position
 
 ---
 
@@ -608,6 +704,10 @@ app.use(cors({
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
+
+## AI Assistance
+
+The frontend of this project was **partially developed with the assistance of AI**. AI tools were used to optimize components, improve type definitions, and assist with debugging during the development process. All AI-generated code was reviewed, tested, and integrated by the developers to ensure quality and correctness.
 
 ## Acknowledgments
 
