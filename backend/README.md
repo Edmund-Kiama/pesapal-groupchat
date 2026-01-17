@@ -4,19 +4,51 @@ This backend application manages groups, elections, voting, notifications, and c
 
 ---
 
+## Deployment
 
-## Usage
+### Backend Deployment (Railway)
 
-1. Configure `.env` with your PostgreSQL connection:
+The backend is deployed on **Railway** with the following configuration:
+
+- **Platform**: Railway
+- **URL**: [https://pesapal-groupchat-production.up.railway.app](https://pesapal-groupchat-production.up.railway.app)
+
+#### Deployment Steps:
+
+1. Push your code to a Git repository (GitHub, GitLab, or Bitbucket)
+2. Import the project in Railway
+3. Configure environment variables:
+   - `DATABASE_URL`: Your PostgreSQL connection string
+   - `JWT_SECRET`: Your JWT secret key
+   - `JWT_EXPIRES_IN`: Token expiration (e.g., 7d)
+   - `EMAIL_USER`: Your email for notifications
+   - `EMAIL_PASS`: Your email password or app password
+4. Deploy
+
+#### Required Environment Variables:
 
 ```env
 DATABASE_URL=postgresql://username:password@host:port/dbname
+JWT_SECRET=your-jwt-secret
+JWT_EXPIRES_IN=7d
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-email-password
 ```
 
-1. Start the server:
+#### CORS Configuration:
 
-```
-node app.jsv
+Ensure CORS is configured to allow requests from the frontend:
+
+```javascript
+import cors from "cors";
+
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "https://pesapal-groupchat.vercel.app"
+  ],
+  credentials: true,
+}));
 ```
 
 

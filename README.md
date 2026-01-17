@@ -2,7 +2,9 @@
 
 A modern, full-featured group management platform built with **Next.js 16** (TypeScript) for the frontend and **Node.js** with **PostgreSQL** for the backend. This platform enables groups to manage meetings, send invitations, and communicate through real-time group chat functionality.
 
-**Live Demo**: [https://pesapal-groupchat.vercel.app](https://pesapal-groupchat.vercel.app)
+**Live Demo**:
+- Frontend: [https://pesapal-groupchat.vercel.app](https://pesapal-groupchat.vercel.app) (Vercel)
+- Backend: [https://pesapal-groupchat-production.up.railway.app](https://pesapal-groupchat-production.up.railway.app) (Railway)
 
 ### Demo Accounts
 
@@ -662,6 +664,27 @@ The frontend is deployed on **Vercel** with the following configuration:
 2. Import the project in Vercel
 3. Configure environment variables:
    - `NEXT_PUBLIC_SERVER_URL`: Your backend API URL
+4. Deploy
+
+### Backend Deployment (Railway)
+
+The backend is deployed on **Railway** with the following configuration:
+
+- **Platform**: Railway
+- **Region**: Auto-selected (usually closest to users)
+- **Environment**: Production
+- **URL**: [https://pesapal-groupchat-production.up.railway.app](https://pesapal-groupchat-production.up.railway.app)
+
+#### Deployment Steps:
+
+1. Push your code to a Git repository (GitHub, GitLab, or Bitbucket)
+2. Import the project in Railway
+3. Configure environment variables:
+   - `DATABASE_URL`: Your PostgreSQL connection string
+   - `JWT_SECRET`: Your JWT secret key
+   - `JWT_EXPIRES_IN`: Token expiration (e.g., 7d)
+   - `EMAIL_USER`: Your email for notifications
+   - `EMAIL_PASS`: Your email password or app password
 4. Deploy
 
 ### Backend Requirements for Production

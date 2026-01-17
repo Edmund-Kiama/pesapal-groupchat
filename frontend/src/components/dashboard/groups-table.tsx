@@ -46,7 +46,24 @@ export function GroupsTable() {
         // Admin sees only groups they created
         const response = await membershipsApi.getGroupsByCreator(user!.id);
         if (response.success) {
-          groupsData = response.data || [];
+          // For admin, we need to fetch member counts separately
+          // Get all memberships to calculate member counts
+          const membershipsResponse = await membershipsApi.getAllMemberships();
+          if (membershipsResponse.success) {
+            const memberCounts: Record<number, number> = {};
+            (membershipsResponse.data || []).forEach((membership: any) => {
+              const groupId = membership.groupId || membership.group?.id;
+              if (groupId) {
+                memberCounts[groupId] = (memberCounts[groupId] || 0) + 1;
+              }
+            });
+            groupsData = (response.data || []).map((group: any) => ({
+              ...group,
+              memberCount: memberCounts[group.id] || 0,
+            }));
+          } else {
+            groupsData = response.data || [];
+          }
         }
       } else {
         // Members see groups they are members of
