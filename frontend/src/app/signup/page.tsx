@@ -89,6 +89,10 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+              <p className="text-[11px] font-light text-black/50">
+                Please enter real email to receive notification emails from the
+                app.
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
