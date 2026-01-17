@@ -53,6 +53,11 @@ export default function LoginPage() {
           </CardTitle>
           <CardDescription>Sign in to your account to continue</CardDescription>
         </CardHeader>
+        <div className="text-xs font-light text-black/60 ml-6 mb-6">
+          <h1 className="text-sm font-semibold mb-2">Demo Accounts</h1>
+          <p>Admin - admin@grouplending.com - Password123</p>
+          <p>User - john@example.com - Password123</p>
+        </div>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
