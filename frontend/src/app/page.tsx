@@ -213,10 +213,17 @@ export default function Home() {
                         </Badge>
                       </div>
                       {group.description && (
-                        <p className="text-sm text-muted-foreground line-clamp-2">
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                           {group.description}
                         </p>
                       )}
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <Users className="h-4 w-4" />
+                        <span>
+                          {group.memberCount || group.members?.length || 0}{" "}
+                          members
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
