@@ -2,7 +2,7 @@ import { Group, GroupMember, GroupInvite, User } from "@/lib/typings/models";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001/api/v1";
+  process.env.NEXT_PUBLIC_SERVER_URL || "https://pesapal-groupchat-production.up.railway.app/api/v1"  || "http://localhost:3001/api/v1";
 
 // Helper to get auth headers
 const getAuthHeaders = () => {

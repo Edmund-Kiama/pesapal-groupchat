@@ -3,7 +3,7 @@ import { Tokens } from "@/lib/typings/auth-typings";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 const API_URL =
-  process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001/api/v1";
+  process.env.NEXT_PUBLIC_SERVER_URL || "https://pesapal-groupchat-production.up.railway.app/api/v1" || "http://localhost:3001/api/v1";
 
 const getAuthHeaders = () => {
   const token = useAuthStore.getState().token;
